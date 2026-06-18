@@ -24,6 +24,7 @@ class FindMyStuffApp extends StatelessWidget {
       title: 'FindMyStuff',
       debugShowCheckedModeBanner: false,
       theme: RAppTheme.lightTheme,
+      // darkTheme: RAppTheme.darkTheme,
       routerConfig: RAppRouter.router,
     );
   }
