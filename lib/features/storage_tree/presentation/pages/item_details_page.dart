@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_path_provider.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +43,7 @@ class ItemDetailsPage extends ConsumerWidget {
               ),
             ],
           ),
-          body: Padding(
+          body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,6 +79,36 @@ class ItemDetailsPage extends ConsumerWidget {
                     );
                   },
                 ),
+
+                if (node.photoPath != null &&
+                    node.photoPath!.isNotEmpty)
+                  Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Photo',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      ClipRRect(
+                        borderRadius:
+                        BorderRadius.circular(12),
+                        child: Image.file(
+                          File(node.photoPath!),
+                          height: 220,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
 
                 Text(
                   'Description',

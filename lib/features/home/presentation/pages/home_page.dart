@@ -58,6 +58,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       appBar: AppBar(title: Text(currentPlace.name)),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'home',
         onPressed: _addRoom,
         child: const Icon(Icons.add),
       ),

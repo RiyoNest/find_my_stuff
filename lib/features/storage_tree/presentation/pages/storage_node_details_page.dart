@@ -75,6 +75,7 @@ class _StorageNodeDetailsPageState
         return Scaffold(
           appBar: AppBar(title: Text(node.name)),
           floatingActionButton: FloatingActionButton(
+            heroTag: 'node_add_child',
             onPressed: () => _addChildNode(node),
             child: const Icon(Icons.add),
           ),

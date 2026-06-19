@@ -119,6 +119,7 @@ class _RoomDetailsContentState
       ),
       floatingActionButton:
       FloatingActionButton(
+        heroTag: 'room_add_storage',
         onPressed: _addStorageLocation,
         child: const Icon(Icons.add),
       ),

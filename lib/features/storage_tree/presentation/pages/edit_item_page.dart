@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 class EditItemPage extends ConsumerStatefulWidget {
   final StorageNodeEntity node;
@@ -24,6 +26,10 @@ class _EditItemPageState
 
   late bool _isImportant;
 
+  late String? _photoPath;
+
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +48,8 @@ class _EditItemPageState
     );
 
     _isImportant = widget.node.isImportant;
+
+    _photoPath = widget.node.photoPath;
   }
 
   @override
@@ -51,6 +59,32 @@ class _EditItemPageState
     _tagsController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> _pickFromGallery() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (file == null) return;
+
+    setState(() {
+      _photoPath = file.path;
+    });
+  }
+
+  Future<void> _takePhoto() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (file == null) return;
+
+    setState(() {
+      _photoPath = file.path;
+    });
   }
 
   Future<void> _save() async {
@@ -63,7 +97,7 @@ class _EditItemPageState
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
-      photoPath: widget.node.photoPath,
+      photoPath: _photoPath,
       tags: _tagsController.text.trim().isEmpty
           ? null
           : _tagsController.text.trim(),
@@ -158,6 +192,61 @@ class _EditItemPageState
                   _isImportant = value;
                 });
               },
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              'Photo',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium,
+            ),
+
+            const SizedBox(height: 12),
+
+            if (_photoPath != null)
+              ClipRRect(
+                borderRadius:
+                BorderRadius.circular(12),
+                child: Image.file(
+                  File(_photoPath!),
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickFromGallery,
+                    icon: const Icon(
+                      Icons.photo_library,
+                    ),
+                    label: const Text(
+                      'Gallery',
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _takePhoto,
+                    icon: const Icon(
+                      Icons.camera_alt,
+                    ),
+                    label: const Text(
+                      'Camera',
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 24),
