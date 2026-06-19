@@ -132,3 +132,23 @@ final moveDestinationsProvider =
 
       return repo.getValidMoveDestinations(sourceNode);
     });
+
+final quickAddDestinationsProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getQuickAddDestinations();
+});
+
+final nodeChildrenProvider =
+    FutureProvider.family<List<StorageNodeEntity>, String>((
+      ref,
+      parentUuid,
+    ) async {
+      ref.watch(storageRefreshProvider);
+
+      final repo = ref.read(storageNodeRepositoryProvider);
+
+      return repo.getChildren(parentUuid);
+    });

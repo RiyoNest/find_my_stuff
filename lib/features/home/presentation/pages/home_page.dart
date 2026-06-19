@@ -1,4 +1,5 @@
 import 'package:find_my_stuff/features/room/presentation/widgets/add_room_dialog.dart';
+import 'package:find_my_stuff/features/storage_tree/presentation/pages/quick_add_item_page.dart';
 import 'package:find_my_stuff/shared/entities/place_entity.dart';
 import 'package:find_my_stuff/shared/entities/room_entity.dart';
 import 'package:find_my_stuff/shared/providers/room_providers.dart';
@@ -71,7 +72,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     final expiredAsync = ref.watch(expiredItemsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(currentPlace.name),
+      appBar: AppBar(
+        title: Text(currentPlace.name),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -82,13 +84,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             itemBuilder: (_) => [
               const PopupMenuItem(
                 value: 'archive',
-                child: Text(
-                  'Archived Items',
-                ),
+                child: Text('Archived Items'),
               ),
             ],
           ),
-        ],),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'home_fab',
         onPressed: _addRoom,
@@ -104,6 +105,19 @@ class _HomePageState extends ConsumerState<HomePage> {
               leading: const Icon(Icons.search),
               onTap: () {
                 context.push('/search');
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Quick Add Item'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QuickAddItemPage()),
+                );
               },
             ),
 

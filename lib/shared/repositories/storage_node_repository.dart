@@ -344,6 +344,12 @@ class StorageNodeRepository {
     save(source);
   }
 
+  List<StorageNodeEntity> getQuickAddDestinations() {
+    return box.getAll().where((node) {
+      return !node.isArchived && node.nodeType != NodeType.item.name;
+    }).toList();
+  }
+
   int save(StorageNodeEntity node) {
     return box.put(node);
   }
