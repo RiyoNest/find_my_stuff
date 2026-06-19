@@ -44,6 +44,28 @@ class StorageNodeRepository {
     return node;
   }
 
+  List<StorageNodeEntity> getPathToRoot(
+      StorageNodeEntity node,
+      ) {
+    final path = <StorageNodeEntity>[];
+
+    StorageNodeEntity? current = node;
+
+    while (current != null) {
+      path.insert(0, current);
+
+      if (current.parentUuid == null) {
+        break;
+      }
+
+      current = getByUuid(
+        current.parentUuid!,
+      );
+    }
+
+    return path;
+  }
+
   int save(StorageNodeEntity node) {
     return box.put(node);
   }

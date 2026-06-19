@@ -1,4 +1,5 @@
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
+import 'package:find_my_stuff/shared/providers/storage_path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,6 +13,7 @@ class ItemDetailsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nodeAsync = ref.watch(storageNodeProvider(nodeUuid));
+    final pathAsync = ref.watch(storagePathProvider(nodeUuid));
 
     return nodeAsync.when(
       loading: () =>
@@ -45,6 +47,36 @@ class ItemDetailsPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (node.isImportant) const Chip(label: Text('Important')),
+
+                pathAsync.when(
+                  loading: () => const CircularProgressIndicator(),
+
+                  error: (_, __) => const SizedBox(),
+
+                  data: (path) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Location',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: path
+                              .map((node) => Chip(label: Text(node.name)))
+                              .toList(),
+                        ),
+
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  },
+                ),
 
                 Text(
                   'Description',
