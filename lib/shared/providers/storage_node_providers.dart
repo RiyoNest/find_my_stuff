@@ -43,3 +43,44 @@ final childNodesProvider =
 
       return repo.getChildren(parentUuid);
     });
+
+final searchProvider = FutureProvider.family<List<StorageNodeEntity>, String>((
+  ref,
+  query,
+) async {
+  if (query.trim().isEmpty) {
+    return [];
+  }
+
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.searchItems(query);
+});
+
+final recentlyViewedProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getRecentlyViewed();
+});
+
+final forgottenItemsProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getForgottenItems();
+});
+
+final dashboardStatsProvider = FutureProvider<Map<String, int>>((ref) async {
+  ref.watch(storageRefreshProvider);
+
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return {
+    'items': repo.getTotalItems(),
+    'important': repo.getImportantItems(),
+    'photos': repo.getItemsWithPhotos(),
+  };
+});

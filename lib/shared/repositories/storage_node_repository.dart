@@ -44,9 +44,7 @@ class StorageNodeRepository {
     return node;
   }
 
-  List<StorageNodeEntity> getPathToRoot(
-      StorageNodeEntity node,
-      ) {
+  List<StorageNodeEntity> getPathToRoot(StorageNodeEntity node) {
     final path = <StorageNodeEntity>[];
 
     StorageNodeEntity? current = node;
@@ -58,12 +56,83 @@ class StorageNodeRepository {
         break;
       }
 
-      current = getByUuid(
-        current.parentUuid!,
-      );
+      current = getByUuid(current.parentUuid!);
     }
 
     return path;
+  }
+
+  Future<List<StorageNodeEntity>> searchItems(String query) async {
+    final q = query.trim().toLowerCase();
+
+    if (q.isEmpty) {
+      return [];
+    }
+
+    return box.getAll().where((node) {
+      final name = node.name.toLowerCase();
+
+      final description = (node.description ?? '').toLowerCase();
+
+      final tags = (node.tags ?? '').toLowerCase();
+
+      return name.contains(q) || description.contains(q) || tags.contains(q);
+    }).toList();
+  }
+
+  void markAsViewed(String uuid) {
+    final node = getByUuid(uuid);
+
+    if (node == null) {
+      return;
+    }
+
+    node.viewedAt = DateTime.now();
+
+    save(node);
+  }
+
+  List<StorageNodeEntity> getRecentlyViewed({int limit = 10}) {
+    final items = box
+        .getAll()
+        .where((e) => e.nodeType == NodeType.item.name && e.viewedAt != null)
+        .toList();
+
+    items.sort((a, b) => b.viewedAt!.compareTo(a.viewedAt!));
+
+    return items.take(limit).toList();
+  }
+
+  List<StorageNodeEntity> getForgottenItems({int limit = 10}) {
+    final items = box
+        .getAll()
+        .where((e) => e.nodeType == NodeType.item.name && e.viewedAt != null)
+        .toList();
+
+    items.sort((a, b) => a.viewedAt!.compareTo(b.viewedAt!));
+
+    return items.take(limit).toList();
+  }
+
+  int getTotalItems() {
+    return box
+        .query(StorageNodeEntity_.nodeType.equals(NodeType.item.name))
+        .build()
+        .count();
+  }
+
+  int getImportantItems() {
+    return box
+        .query(StorageNodeEntity_.isImportant.equals(true))
+        .build()
+        .count();
+  }
+
+  int getItemsWithPhotos() {
+    return box
+        .getAll()
+        .where((e) => e.photoPath != null && e.photoPath!.isNotEmpty)
+        .length;
   }
 
   int save(StorageNodeEntity node) {
