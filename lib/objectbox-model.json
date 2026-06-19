@@ -1,0 +1,215 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:7870874759693489884",
+      "lastPropertyId": "9:8814085795202451710",
+      "name": "PlaceEntity",
+      "properties": [
+        {
+          "id": "1:195312368255579858",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4358933961560565034",
+          "name": "uuid",
+          "type": 9
+        },
+        {
+          "id": "3:5335928931233296268",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:3971638116165089961",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "5:6009768700468669979",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "6:1552754926172621671",
+          "name": "isArchived",
+          "type": 1
+        },
+        {
+          "id": "7:7926813910379582183",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "8:5622064714565965224",
+          "name": "updatedAt",
+          "type": 10
+        },
+        {
+          "id": "9:8814085795202451710",
+          "name": "sortOrder",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:8802091182850230581",
+      "lastPropertyId": "9:8260765816452633537",
+      "name": "RoomEntity",
+      "properties": [
+        {
+          "id": "1:2083116115011136486",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7443343198282602900",
+          "name": "uuid",
+          "type": 9
+        },
+        {
+          "id": "3:1565452542082270617",
+          "name": "placeUuid",
+          "type": 9
+        },
+        {
+          "id": "4:7235398777975400842",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "5:5223144287141907694",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "6:4476334529508645945",
+          "name": "isArchived",
+          "type": 1
+        },
+        {
+          "id": "7:3835562554096960023",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "8:5682936595815019489",
+          "name": "updatedAt",
+          "type": 10
+        },
+        {
+          "id": "9:8260765816452633537",
+          "name": "sortOrder",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:7954985803738855653",
+      "lastPropertyId": "16:9046119656525438401",
+      "name": "StorageNodeEntity",
+      "properties": [
+        {
+          "id": "1:6940150155732419772",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3595684663088714071",
+          "name": "uuid",
+          "type": 9
+        },
+        {
+          "id": "3:1532904614690716340",
+          "name": "roomUuid",
+          "type": 9
+        },
+        {
+          "id": "4:7317130013234515172",
+          "name": "parentUuid",
+          "type": 9
+        },
+        {
+          "id": "5:2038007066104165304",
+          "name": "nodeType",
+          "type": 9
+        },
+        {
+          "id": "6:942364401451154438",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "7:5095826458160907127",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "8:655775861612599018",
+          "name": "photoPath",
+          "type": 9
+        },
+        {
+          "id": "9:8983622826120384276",
+          "name": "tags",
+          "type": 9
+        },
+        {
+          "id": "10:4416566148229295976",
+          "name": "isImportant",
+          "type": 1
+        },
+        {
+          "id": "11:6775024471717734931",
+          "name": "isArchived",
+          "type": 1
+        },
+        {
+          "id": "12:7063695872014792823",
+          "name": "syncStatus",
+          "type": 9
+        },
+        {
+          "id": "13:7949199081335155200",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "14:7940448765401810234",
+          "name": "updatedAt",
+          "type": 10
+        },
+        {
+          "id": "15:7867257424500725406",
+          "name": "viewedAt",
+          "type": 10
+        },
+        {
+          "id": "16:9046119656525438401",
+          "name": "sortOrder",
+          "type": 6
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "3:7954985803738855653",
+  "lastIndexId": "0:0",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}
