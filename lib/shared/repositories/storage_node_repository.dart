@@ -38,6 +38,51 @@ class StorageNodeRepository {
     return result;
   }
 
+  List<StorageNodeEntity> getValidMoveDestinations(StorageNodeEntity source) {
+    return box.getAll().where((node) {
+      if (node.isArchived) {
+        return false;
+      }
+
+      if (node.roomUuid != source.roomUuid) {
+        return false;
+      }
+
+      // Can't move into itself
+      if (node.uuid == source.uuid) {
+        return false;
+      }
+
+      // Can't move into descendants
+      if (isDescendant(source.uuid, node.uuid)) {
+        return false;
+      }
+
+      switch (source.nodeType) {
+        // ITEM
+        case 'item':
+          return node.nodeType != 'item';
+
+        // CONTAINER
+        case 'container':
+          return node.nodeType == 'storageLocation' ||
+              node.nodeType == 'section' ||
+              node.nodeType == 'container';
+
+        // SECTION
+        case 'section':
+          return node.nodeType == 'storageLocation';
+
+        // STORAGE LOCATION
+        case 'storageLocation':
+          return false;
+
+        default:
+          return false;
+      }
+    }).toList();
+  }
+
   StorageNodeEntity? getByUuid(String uuid) {
     final query = box.query(StorageNodeEntity_.uuid.equals(uuid)).build();
 
@@ -46,6 +91,42 @@ class StorageNodeRepository {
     query.close();
 
     return node;
+  }
+
+  bool isDescendant(String sourceUuid, String destinationUuid) {
+    final destination = getByUuid(destinationUuid);
+
+    if (destination == null) {
+      return false;
+    }
+
+    StorageNodeEntity? current = destination;
+
+    while (current != null) {
+      if (current.uuid == sourceUuid) {
+        return true;
+      }
+
+      if (current.parentUuid == null) {
+        break;
+      }
+
+      current = getByUuid(current.parentUuid!);
+    }
+
+    return false;
+  }
+
+  bool canMoveNode(String sourceUuid, String destinationUuid) {
+    if (sourceUuid == destinationUuid) {
+      return false;
+    }
+
+    if (isDescendant(sourceUuid, destinationUuid)) {
+      return false;
+    }
+
+    return true;
   }
 
   List<StorageNodeEntity> getPathToRoot(StorageNodeEntity node) {
@@ -64,6 +145,12 @@ class StorageNodeRepository {
     }
 
     return path;
+  }
+
+  String buildPath(StorageNodeEntity node) {
+    final path = getPathToRoot(node);
+
+    return path.map((e) => e.name).join(' > ');
   }
 
   Future<List<StorageNodeEntity>> searchItems(String query) async {
@@ -229,6 +316,32 @@ class StorageNodeRepository {
     item.isArchived = false;
 
     save(item);
+  }
+
+  List<StorageNodeEntity> getAllPossibleParents(String roomUuid) {
+    return box.getAll().where((node) {
+      return !node.isArchived &&
+          node.roomUuid == roomUuid &&
+          node.nodeType != 'item';
+    }).toList();
+  }
+
+  void moveNode(String sourceUuid, String destinationUuid) {
+    final source = getByUuid(sourceUuid);
+
+    if (source == null) {
+      return;
+    }
+
+    if (!canMoveNode(sourceUuid, destinationUuid)) {
+      return;
+    }
+
+    source.parentUuid = destinationUuid;
+
+    source.updatedAt = DateTime.now();
+
+    save(source);
   }
 
   int save(StorageNodeEntity node) {

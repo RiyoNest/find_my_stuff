@@ -122,3 +122,13 @@ final archivedItemsProvider = FutureProvider<List<StorageNodeEntity>>((
 
   return repo.getArchivedItems();
 });
+
+final moveDestinationsProvider =
+    FutureProvider.family<List<StorageNodeEntity>, StorageNodeEntity>((
+      ref,
+      sourceNode,
+    ) async {
+      final repo = ref.read(storageNodeRepositoryProvider);
+
+      return repo.getValidMoveDestinations(sourceNode);
+    });

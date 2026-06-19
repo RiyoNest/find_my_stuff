@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'edit_item_page.dart';
+import 'move_node_page.dart';
 
 class ItemDetailsPage extends ConsumerStatefulWidget {
   final String nodeUuid;
@@ -60,6 +61,31 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                   );
 
                   ref.invalidate(storageNodeProvider(widget.nodeUuid));
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.drive_file_move),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MoveNodePage(
+                        node: node,
+                      ),
+                    ),
+                  );
+
+                  ref.read(
+                    storageRefreshProvider.notifier,
+                  ).state++;
+
+                  if (mounted) {
+                    ref.invalidate(
+                      storageNodeProvider(
+                        widget.nodeUuid,
+                      ),
+                    );
+                  }
                 },
               ),
               IconButton(
