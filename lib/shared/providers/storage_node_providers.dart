@@ -80,7 +80,15 @@ final dashboardStatsProvider = FutureProvider<Map<String, int>>((ref) async {
 
   return {
     'items': repo.getTotalItems(),
-    'important': repo.getImportantItems(),
+    'important': repo.getImportantItemCount(),
     'photos': repo.getItemsWithPhotos(),
   };
+});
+
+final importantItemsProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getImportantItems();
 });

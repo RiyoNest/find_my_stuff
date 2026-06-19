@@ -121,11 +121,11 @@ class StorageNodeRepository {
         .count();
   }
 
-  int getImportantItems() {
+  int getImportantItemCount() {
     return box
-        .query(StorageNodeEntity_.isImportant.equals(true))
-        .build()
-        .count();
+        .getAll()
+        .where((e) => e.nodeType == NodeType.item.name && e.isImportant)
+        .length;
   }
 
   int getItemsWithPhotos() {
@@ -133,6 +133,17 @@ class StorageNodeRepository {
         .getAll()
         .where((e) => e.photoPath != null && e.photoPath!.isNotEmpty)
         .length;
+  }
+
+  List<StorageNodeEntity> getImportantItems({int limit = 10}) {
+    final items = box
+        .getAll()
+        .where((e) => e.nodeType == NodeType.item.name && e.isImportant)
+        .toList();
+
+    items.sort((a, b) => a.name.compareTo(b.name));
+
+    return items.take(limit).toList();
   }
 
   int save(StorageNodeEntity node) {

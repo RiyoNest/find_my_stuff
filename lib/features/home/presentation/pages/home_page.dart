@@ -62,20 +62,12 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final forgottenAsync = ref.watch(forgottenItemsProvider);
 
+    final importantAsync = ref.watch(importantItemsProvider);
+
     final statsAsync = ref.watch(dashboardStatsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(currentPlace.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              context.push('/search');
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(currentPlace.name)),
       floatingActionButton: FloatingActionButton(
         heroTag: 'home_fab',
         onPressed: _addRoom,
@@ -132,6 +124,42 @@ class _HomePageState extends ConsumerState<HomePage> {
                       icon: Icons.photo,
                     ),
                   ],
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Important Items',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            importantAsync.when(
+              loading: () =>
+              const CircularProgressIndicator(),
+
+              error: (_, __) =>
+              const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text(
+                    'No important items',
+                  );
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map(
+                        (e) => ItemActivityTile(
+                      item: e,
+                    ),
+                  )
+                      .toList(),
                 );
               },
             ),
