@@ -88,13 +88,16 @@ final dashboardStatsProvider = FutureProvider<Map<String, int>>((ref) async {
 final importantItemsProvider = FutureProvider<List<StorageNodeEntity>>((
   ref,
 ) async {
+  ref.watch(storageRefreshProvider);
+
   final repo = ref.read(storageNodeRepositoryProvider);
 
   return repo.getImportantItems();
 });
 
-final expiringItemsProvider =
-FutureProvider<List<StorageNodeEntity>>((ref) async {
+final expiringItemsProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
   ref.watch(storageRefreshProvider);
 
   final repo = ref.read(storageNodeRepositoryProvider);
@@ -102,11 +105,20 @@ FutureProvider<List<StorageNodeEntity>>((ref) async {
   return repo.getExpiringItems();
 });
 
-final expiredItemsProvider =
-FutureProvider<List<StorageNodeEntity>>((ref) async {
+final expiredItemsProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
   ref.watch(storageRefreshProvider);
 
   final repo = ref.read(storageNodeRepositoryProvider);
 
   return repo.getExpiredItems();
+});
+
+final archivedItemsProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getArchivedItems();
 });

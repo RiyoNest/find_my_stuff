@@ -62,6 +62,67 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                   ref.invalidate(storageNodeProvider(widget.nodeUuid));
                 },
               ),
+              IconButton(
+                icon: const Icon(Icons.archive),
+                onPressed: () async {
+                  final confirmed =
+                  await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text(
+                        'Archive Item',
+                      ),
+                      content: Text(
+                        'Move "${node.name}" to archive?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(
+                              context,
+                              false,
+                            );
+                          },
+                          child: const Text(
+                            'Cancel',
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            Navigator.pop(
+                              context,
+                              true,
+                            );
+                          },
+                          child: const Text(
+                            'Archive',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed != true) {
+                    return;
+                  }
+
+                  final repo = ref.read(
+                    storageNodeRepositoryProvider,
+                  );
+
+                  repo.archiveItem(
+                    node.uuid,
+                  );
+
+                  ref.read(
+                    storageRefreshProvider.notifier,
+                  ).state++;
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
             ],
           ),
           body: SingleChildScrollView(
