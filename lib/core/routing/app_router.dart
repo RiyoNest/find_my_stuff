@@ -3,6 +3,7 @@ import 'package:find_my_stuff/features/splash/presentation/pages/splash_page.dar
 import 'package:go_router/go_router.dart';
 
 import '../../features/room/presentation/pages/room_details_page.dart';
+import '../../features/search/presentation/pages/search_page.dart';
 import '../../features/storage_tree/presentation/pages/storage_node_details_page.dart';
 
 class RAppRouter {
@@ -33,6 +34,15 @@ class RAppRouter {
             nodeUuid:
             state.pathParameters['nodeUuid']!,
           );
+        },
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (
+            context,
+            state,
+            ) {
+          return const SearchPage();
         },
       ),
     ],

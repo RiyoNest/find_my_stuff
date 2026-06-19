@@ -2,7 +2,10 @@ import 'package:find_my_stuff/features/room/presentation/widgets/add_room_dialog
 import 'package:find_my_stuff/shared/entities/place_entity.dart';
 import 'package:find_my_stuff/shared/entities/room_entity.dart';
 import 'package:find_my_stuff/shared/providers/room_providers.dart';
+import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/repositories/place_repository.dart';
+import 'package:find_my_stuff/shared/widgets/dashboard_stat_card.dart';
+import 'package:find_my_stuff/shared/widgets/item_activity_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,14 +58,26 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final roomsAsync = ref.watch(roomListProvider(currentPlace.uuid));
 
+    final recentAsync = ref.watch(recentlyViewedProvider);
+
+    final forgottenAsync = ref.watch(forgottenItemsProvider);
+
+    final importantAsync = ref.watch(importantItemsProvider);
+
+    final statsAsync = ref.watch(dashboardStatsProvider);
+
+    final expiringAsync = ref.watch(expiringItemsProvider);
+
+    final expiredAsync = ref.watch(expiredItemsProvider);
+
     return Scaffold(
       appBar: AppBar(title: Text(currentPlace.name)),
       floatingActionButton: FloatingActionButton(
-        heroTag: 'home',
+        heroTag: 'home_fab',
         onPressed: _addRoom,
         child: const Icon(Icons.add),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +85,229 @@ class _HomePageState extends ConsumerState<HomePage> {
             SearchBar(
               hintText: 'Search your stuff...',
               leading: const Icon(Icons.search),
-              onTap: () {},
+              onTap: () {
+                context.push('/search');
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text('Dashboard', style: Theme.of(context).textTheme.titleLarge),
+
+            const SizedBox(height: 12),
+
+            statsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (stats) {
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.6,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  children: [
+                    DashboardStatCard(
+                      title: 'Items',
+                      value: stats['items'].toString(),
+                      icon: Icons.inventory_2,
+                    ),
+
+                    DashboardStatCard(
+                      title: 'Important',
+                      value: stats['important'].toString(),
+                      icon: Icons.star,
+                    ),
+
+                    DashboardStatCard(
+                      title: 'Photos',
+                      value: stats['photos'].toString(),
+                      icon: Icons.photo,
+                    ),
+
+                    DashboardStatCard(
+                      title: 'Expiring',
+                      value: expiringAsync.value?.length.toString() ?? '0',
+                      icon: Icons.schedule,
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Recent Activity',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            recentAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No recently viewed items');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map((e) => ItemActivityTile(item: e))
+                      .toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Important Items',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            importantAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No important items');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map((e) => ItemActivityTile(item: e))
+                      .toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Expiring Soon',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            expiringAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No items expiring soon');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map(
+                        (e) => Card(
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.schedule,
+                              color: Colors.orange,
+                            ),
+                            title: Text(e.name),
+                            subtitle: Text(
+                              'Expires: ${e.expiryDate?.day}/${e.expiryDate?.month}/${e.expiryDate?.year}',
+                            ),
+                            onTap: () {
+                              context.push('/node/${e.uuid}');
+                            },
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Expired Items',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            expiredAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No expired items');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map(
+                        (e) => Card(
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.warning,
+                              color: Colors.red,
+                            ),
+                            title: Text(e.name),
+                            subtitle: Text(
+                              'Expired: ${e.expiryDate?.day}/${e.expiryDate?.month}/${e.expiryDate?.year}',
+                            ),
+                            onTap: () {
+                              context.push('/node/${e.uuid}');
+                            },
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Forgotten Items',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            forgottenAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No forgotten items');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map((e) => ItemActivityTile(item: e))
+                      .toList(),
+                );
+              },
             ),
 
             const SizedBox(height: 24),
@@ -78,46 +315,57 @@ class _HomePageState extends ConsumerState<HomePage> {
             roomsAsync.when(
               loading: () =>
                   Text('Rooms', style: Theme.of(context).textTheme.titleLarge),
+
               error: (_, __) =>
                   Text('Rooms', style: Theme.of(context).textTheme.titleLarge),
+
               data: (rooms) => Text(
                 'Rooms (${rooms.length})',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            Expanded(
-              child: roomsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (rooms) {
-                  if (rooms.isEmpty) {
-                    return const Center(child: Text('No rooms added yet'));
-                  }
+            roomsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
 
-                  return ListView.separated(
-                    itemCount: rooms.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, index) {
-                      final room = rooms[index];
+              error: (e, _) => Center(child: Text('Error: $e')),
 
-                      return Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.meeting_room),
-                          title: Text(room.name),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {
-                            context.push('/room/${room.uuid}');
-                          },
-                        ),
-                      );
-                    },
+              data: (rooms) {
+                if (rooms.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text('No rooms added yet'),
+                    ),
                   );
-                },
-              ),
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: rooms.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, index) {
+                    final room = rooms[index];
+
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.meeting_room),
+                        title: Text(room.name),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          context.push('/room/${room.uuid}');
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
             ),
+
+            const SizedBox(height: 100),
           ],
         ),
       ),

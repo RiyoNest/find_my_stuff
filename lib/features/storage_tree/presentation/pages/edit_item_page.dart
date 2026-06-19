@@ -9,23 +9,21 @@ import 'package:image_picker/image_picker.dart';
 class EditItemPage extends ConsumerStatefulWidget {
   final StorageNodeEntity node;
 
-  const EditItemPage({
-    super.key,
-    required this.node,
-  });
+  const EditItemPage({super.key, required this.node});
 
   @override
-  ConsumerState<EditItemPage> createState() =>
-      _EditItemPageState();
+  ConsumerState<EditItemPage> createState() => _EditItemPageState();
 }
 
-class _EditItemPageState
-    extends ConsumerState<EditItemPage> {
+class _EditItemPageState extends ConsumerState<EditItemPage> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _tagsController;
 
   late bool _isImportant;
+
+  late bool _trackExpiry;
+  DateTime? _expiryDate;
 
   late String? _photoPath;
 
@@ -35,20 +33,17 @@ class _EditItemPageState
   void initState() {
     super.initState();
 
-    _nameController = TextEditingController(
-      text: widget.node.name,
+    _nameController = TextEditingController(text: widget.node.name);
+
+    _descriptionController = TextEditingController(
+      text: widget.node.description ?? '',
     );
 
-    _descriptionController =
-        TextEditingController(
-          text: widget.node.description ?? '',
-        );
-
-    _tagsController = TextEditingController(
-      text: widget.node.tags ?? '',
-    );
+    _tagsController = TextEditingController(text: widget.node.tags ?? '');
 
     _isImportant = widget.node.isImportant;
+    _trackExpiry = widget.node.trackExpiry;
+    _expiryDate = widget.node.expiryDate;
 
     _photoPath = widget.node.photoPath;
   }
@@ -70,10 +65,7 @@ class _EditItemPageState
 
     if (file == null) return;
 
-    final savedPath =
-    await PhotoStorageService.savePhoto(
-      file.path,
-    );
+    final savedPath = await PhotoStorageService.savePhoto(file.path);
 
     setState(() {
       _photoPath = savedPath;
@@ -88,14 +80,26 @@ class _EditItemPageState
 
     if (file == null) return;
 
-    final savedPath =
-    await PhotoStorageService.savePhoto(
-      file.path,
-    );
+    final savedPath = await PhotoStorageService.savePhoto(file.path);
 
     setState(() {
       _photoPath = savedPath;
     });
+  }
+
+  Future<void> _selectExpiryDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiryDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _expiryDate = picked;
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -119,17 +123,15 @@ class _EditItemPageState
       updatedAt: DateTime.now(),
       viewedAt: widget.node.viewedAt,
       sortOrder: widget.node.sortOrder,
+      expiryDate: _expiryDate,
+      trackExpiry: _trackExpiry,
     )..id = widget.node.id;
 
-    final repo = ref.read(
-      storageNodeRepositoryProvider,
-    );
+    final repo = ref.read(storageNodeRepositoryProvider);
 
     repo.save(updatedNode);
 
-    ref.read(
-      storageRefreshProvider.notifier,
-    ).state++;
+    ref.read(storageRefreshProvider.notifier).state++;
 
     if (mounted) {
       Navigator.pop(context);
@@ -139,64 +141,45 @@ class _EditItemPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Edit Item',
-        ),
-      ),
+      appBar: AppBar(title: const Text('Edit Item')),
       body: SingleChildScrollView(
-        padding:
-        const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
-              controller:
-              _nameController,
-              decoration:
-              const InputDecoration(
+              controller: _nameController,
+              decoration: const InputDecoration(
                 labelText: 'Item Name',
-                border:
-                OutlineInputBorder(),
+                border: OutlineInputBorder(),
               ),
             ),
 
             const SizedBox(height: 16),
 
             TextField(
-              controller:
-              _descriptionController,
+              controller: _descriptionController,
               maxLines: 4,
-              decoration:
-              const InputDecoration(
-                labelText:
-                'Description',
-                border:
-                OutlineInputBorder(),
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
               ),
             ),
 
             const SizedBox(height: 16),
 
             TextField(
-              controller:
-              _tagsController,
-              decoration:
-              const InputDecoration(
-                labelText:
-                'Tags (comma separated)',
-                border:
-                OutlineInputBorder(),
+              controller: _tagsController,
+              decoration: const InputDecoration(
+                labelText: 'Tags (comma separated)',
+                border: OutlineInputBorder(),
               ),
             ),
 
             const SizedBox(height: 16),
 
             SwitchListTile(
-              title: const Text(
-                'Mark as Important',
-              ),
+              title: const Text('Mark as Important'),
               value: _isImportant,
               onChanged: (value) {
                 setState(() {
@@ -205,21 +188,49 @@ class _EditItemPageState
               },
             ),
 
+            const SizedBox(height: 12),
+
+            SwitchListTile(
+              title: const Text('Track Expiry'),
+              value: _trackExpiry,
+              onChanged: (value) {
+                setState(() {
+                  _trackExpiry = value;
+
+                  if (!value) {
+                    _expiryDate = null;
+                  }
+                });
+              },
+            ),
+
+            if (_trackExpiry)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _selectExpiryDate,
+                    icon: const Icon(Icons.calendar_month),
+                    label: Text(
+                      _expiryDate == null
+                          ? 'Select Expiry Date'
+                          : '${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}',
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+                ],
+              ),
+
             const SizedBox(height: 16),
 
-            Text(
-              'Photo',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium,
-            ),
+            Text('Photo', style: Theme.of(context).textTheme.titleMedium),
 
             const SizedBox(height: 12),
 
             if (_photoPath != null)
               ClipRRect(
-                borderRadius:
-                BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.file(
                   File(_photoPath!),
                   height: 200,
@@ -235,12 +246,8 @@ class _EditItemPageState
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _pickFromGallery,
-                    icon: const Icon(
-                      Icons.photo_library,
-                    ),
-                    label: const Text(
-                      'Gallery',
-                    ),
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Gallery'),
                   ),
                 ),
 
@@ -249,12 +256,8 @@ class _EditItemPageState
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _takePhoto,
-                    icon: const Icon(
-                      Icons.camera_alt,
-                    ),
-                    label: const Text(
-                      'Camera',
-                    ),
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Camera'),
                   ),
                 ),
               ],
@@ -264,12 +267,7 @@ class _EditItemPageState
 
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
-                onPressed: _save,
-                child: const Text(
-                  'Save',
-                ),
-              ),
+              child: FilledButton(onPressed: _save, child: const Text('Save')),
             ),
           ],
         ),

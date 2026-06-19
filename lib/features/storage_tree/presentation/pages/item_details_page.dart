@@ -8,15 +8,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'edit_item_page.dart';
 
-class ItemDetailsPage extends ConsumerWidget {
+class ItemDetailsPage extends ConsumerStatefulWidget {
   final String nodeUuid;
 
   const ItemDetailsPage({super.key, required this.nodeUuid});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nodeAsync = ref.watch(storageNodeProvider(nodeUuid));
-    final pathAsync = ref.watch(storagePathProvider(nodeUuid));
+  ConsumerState<ItemDetailsPage> createState() => _ItemDetailsPageState();
+}
+
+class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final repo = ref.read(storageNodeRepositoryProvider);
+
+      repo.markAsViewed(widget.nodeUuid);
+
+      ref.invalidate(recentlyViewedProvider);
+
+      ref.invalidate(forgottenItemsProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final nodeAsync = ref.watch(storageNodeProvider(widget.nodeUuid));
+    final pathAsync = ref.watch(storagePathProvider(widget.nodeUuid));
 
     return nodeAsync.when(
       loading: () =>
@@ -39,7 +59,7 @@ class ItemDetailsPage extends ConsumerWidget {
                     MaterialPageRoute(builder: (_) => EditItemPage(node: node)),
                   );
 
-                  ref.invalidate(storageNodeProvider(nodeUuid));
+                  ref.invalidate(storageNodeProvider(widget.nodeUuid));
                 },
               ),
             ],
@@ -49,7 +69,57 @@ class ItemDetailsPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (node.isImportant) const Chip(label: Text('Important')),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (node.isImportant) const Chip(label: Text('Important')),
+
+                    if (node.trackExpiry)
+                      const Chip(label: Text('Expiry Tracked')),
+                  ],
+                ),
+
+                if (node.trackExpiry && node.expiryDate != null)
+                  Builder(
+                    builder: (_) {
+                      final daysLeft = node.expiryDate!
+                          .difference(DateTime.now())
+                          .inDays;
+
+                      Color color;
+
+                      String status;
+
+                      if (daysLeft < 0) {
+                        color = Colors.red;
+                        status = 'Expired';
+                      } else if (daysLeft <= 30) {
+                        color = Colors.orange;
+                        status = '$daysLeft days remaining';
+                      } else {
+                        color = Colors.green;
+                        status = '$daysLeft days remaining';
+                      }
+
+                      return Card(
+                        color: color.withOpacity(0.1),
+                        child: ListTile(
+                          leading: Icon(Icons.event, color: color),
+                          title: Text('Expiry Date'),
+                          subtitle: Text(
+                            '${node.expiryDate!.day}/${node.expiryDate!.month}/${node.expiryDate!.year}',
+                          ),
+                          trailing: Text(
+                            status,
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
 
                 pathAsync.when(
                   loading: () => const CircularProgressIndicator(),
@@ -81,32 +151,26 @@ class ItemDetailsPage extends ConsumerWidget {
                   },
                 ),
 
-                if (node.photoPath != null &&
-                    node.photoPath!.isNotEmpty)
+                if (node.photoPath != null && node.photoPath!.isNotEmpty)
                   Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Photo',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
 
                       const SizedBox(height: 8),
 
                       ClipRRect(
-                        borderRadius:
-                        BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12),
                         child: GestureDetector(
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => PhotoViewerPage(
-                                  imagePath: node.photoPath!,
-                                ),
+                                builder: (_) =>
+                                    PhotoViewerPage(imagePath: node.photoPath!),
                               ),
                             );
                           },
