@@ -146,6 +146,32 @@ class StorageNodeRepository {
     return items.take(limit).toList();
   }
 
+  List<StorageNodeEntity> getExpiringItems({int days = 30}) {
+    final now = DateTime.now();
+
+    return box.getAll().where((item) {
+      if (!item.trackExpiry) return false;
+
+      if (item.expiryDate == null) return false;
+
+      final difference = item.expiryDate!.difference(now).inDays;
+
+      return difference >= 0 && difference <= days;
+    }).toList();
+  }
+
+  List<StorageNodeEntity> getExpiredItems() {
+    final now = DateTime.now();
+
+    return box.getAll().where((item) {
+      if (!item.trackExpiry) return false;
+
+      if (item.expiryDate == null) return false;
+
+      return item.expiryDate!.isBefore(now);
+    }).toList();
+  }
+
   int save(StorageNodeEntity node) {
     return box.put(node);
   }

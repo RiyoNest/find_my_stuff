@@ -150,105 +150,117 @@ final _entities = <obx_int.ModelEntity>[
     backlinks: <obx_int.ModelBacklink>[],
   ),
   obx_int.ModelEntity(
-    id: const obx_int.IdUid(3, 7954985803738855653),
+    id: const obx_int.IdUid(4, 5525750899245441717),
     name: 'StorageNodeEntity',
-    lastPropertyId: const obx_int.IdUid(16, 9046119656525438401),
+    lastPropertyId: const obx_int.IdUid(18, 3936875561199344098),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(1, 6940150155732419772),
+        id: const obx_int.IdUid(1, 3060723912896425799),
         name: 'id',
         type: 6,
         flags: 1,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(2, 3595684663088714071),
+        id: const obx_int.IdUid(2, 5317297573534402957),
         name: 'uuid',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(3, 1532904614690716340),
+        id: const obx_int.IdUid(3, 2684235829347301413),
         name: 'roomUuid',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(4, 7317130013234515172),
+        id: const obx_int.IdUid(4, 6507539583636627132),
         name: 'parentUuid',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(5, 2038007066104165304),
+        id: const obx_int.IdUid(5, 4117940187178923227),
         name: 'nodeType',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(6, 942364401451154438),
+        id: const obx_int.IdUid(6, 6887480387733724489),
         name: 'name',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(7, 5095826458160907127),
+        id: const obx_int.IdUid(7, 8231019296709969052),
         name: 'description',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(8, 655775861612599018),
+        id: const obx_int.IdUid(8, 3322877606899008310),
         name: 'photoPath',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(9, 8983622826120384276),
+        id: const obx_int.IdUid(9, 2803445941022159092),
         name: 'tags',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(10, 4416566148229295976),
+        id: const obx_int.IdUid(10, 2501125355354166416),
         name: 'isImportant',
         type: 1,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(11, 6775024471717734931),
+        id: const obx_int.IdUid(11, 8564275879526417356),
         name: 'isArchived',
         type: 1,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(12, 7063695872014792823),
+        id: const obx_int.IdUid(12, 8061842724460789209),
         name: 'syncStatus',
         type: 9,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(13, 7949199081335155200),
+        id: const obx_int.IdUid(13, 3024508705270062766),
         name: 'createdAt',
         type: 10,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(14, 7940448765401810234),
+        id: const obx_int.IdUid(14, 6512685287111474719),
         name: 'updatedAt',
         type: 10,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(15, 7867257424500725406),
+        id: const obx_int.IdUid(15, 1471165333404250438),
         name: 'viewedAt',
         type: 10,
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(16, 9046119656525438401),
+        id: const obx_int.IdUid(16, 5374589180224491296),
         name: 'sortOrder',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 7045158865574486976),
+        name: 'expiryDate',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(18, 3936875561199344098),
+        name: 'trackExpiry',
+        type: 1,
         flags: 0,
       ),
     ],
@@ -300,13 +312,30 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(3, 7954985803738855653),
+    lastEntityId: const obx_int.IdUid(4, 5525750899245441717),
     lastIndexId: const obx_int.IdUid(0, 0),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
-    retiredEntityUids: const [],
+    retiredEntityUids: const [7954985803738855653],
     retiredIndexUids: const [],
-    retiredPropertyUids: const [],
+    retiredPropertyUids: const [
+      6940150155732419772,
+      3595684663088714071,
+      1532904614690716340,
+      7317130013234515172,
+      2038007066104165304,
+      942364401451154438,
+      5095826458160907127,
+      655775861612599018,
+      8983622826120384276,
+      4416566148229295976,
+      6775024471717734931,
+      7063695872014792823,
+      7949199081335155200,
+      7940448765401810234,
+      7867257424500725406,
+      9046119656525438401,
+    ],
     retiredRelationUids: const [],
     modelVersion: 5,
     modelVersionParserMinimum: 5,
@@ -490,7 +519,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
             ? null
             : fbb.writeString(object.tags!);
         final syncStatusOffset = fbb.writeString(object.syncStatus);
-        fbb.startTable(17);
+        fbb.startTable(19);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uuidOffset);
         fbb.addOffset(2, roomUuidOffset);
@@ -507,6 +536,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(13, object.updatedAt.millisecondsSinceEpoch);
         fbb.addInt64(14, object.viewedAt?.millisecondsSinceEpoch);
         fbb.addInt64(15, object.sortOrder);
+        fbb.addInt64(16, object.expiryDate?.millisecondsSinceEpoch);
+        fbb.addBool(17, object.trackExpiry);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -517,6 +548,11 @@ obx_int.ModelDefinition getObjectBoxModel() {
           buffer,
           rootOffset,
           32,
+        );
+        final expiryDateValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          36,
         );
         final uuidParam = const fb.StringReader(
           asciiOptimization: true,
@@ -572,6 +608,15 @@ obx_int.ModelDefinition getObjectBoxModel() {
           34,
           0,
         );
+        final expiryDateParam = expiryDateValue == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(expiryDateValue);
+        final trackExpiryParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          38,
+          false,
+        );
         final object = StorageNodeEntity(
           uuid: uuidParam,
           roomUuid: roomUuidParam,
@@ -588,6 +633,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           updatedAt: updatedAtParam,
           viewedAt: viewedAtParam,
           sortOrder: sortOrderParam,
+          expiryDate: expiryDateParam,
+          trackExpiry: trackExpiryParam,
         )..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0);
 
         return object;
@@ -774,5 +821,15 @@ class StorageNodeEntity_ {
   /// See [StorageNodeEntity.sortOrder].
   static final sortOrder = obx.QueryIntegerProperty<StorageNodeEntity>(
     _entities[2].properties[15],
+  );
+
+  /// See [StorageNodeEntity.expiryDate].
+  static final expiryDate = obx.QueryDateProperty<StorageNodeEntity>(
+    _entities[2].properties[16],
+  );
+
+  /// See [StorageNodeEntity.trackExpiry].
+  static final trackExpiry = obx.QueryBooleanProperty<StorageNodeEntity>(
+    _entities[2].properties[17],
   );
 }

@@ -92,3 +92,21 @@ final importantItemsProvider = FutureProvider<List<StorageNodeEntity>>((
 
   return repo.getImportantItems();
 });
+
+final expiringItemsProvider =
+FutureProvider<List<StorageNodeEntity>>((ref) async {
+  ref.watch(storageRefreshProvider);
+
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getExpiringItems();
+});
+
+final expiredItemsProvider =
+FutureProvider<List<StorageNodeEntity>>((ref) async {
+  ref.watch(storageRefreshProvider);
+
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getExpiredItems();
+});

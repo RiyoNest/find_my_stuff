@@ -1,4 +1,4 @@
-import '../../objectbox.g.dart';
+import 'package:objectbox/objectbox.dart';
 
 @Entity()
 class StorageNodeEntity {
@@ -31,9 +31,15 @@ class StorageNodeEntity {
 
   DateTime updatedAt;
 
+  @Property(type: PropertyType.date)
   DateTime? viewedAt;
 
   int sortOrder;
+
+  @Property(type: PropertyType.date)
+  DateTime? expiryDate;
+
+  bool trackExpiry;
 
   StorageNodeEntity({
     required this.uuid,
@@ -51,5 +57,7 @@ class StorageNodeEntity {
     required this.updatedAt,
     this.viewedAt,
     this.sortOrder = 0,
+    this.expiryDate,
+    this.trackExpiry = false,
   });
 }

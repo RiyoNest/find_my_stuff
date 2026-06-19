@@ -66,6 +66,10 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final statsAsync = ref.watch(dashboardStatsProvider);
 
+    final expiringAsync = ref.watch(expiringItemsProvider);
+
+    final expiredAsync = ref.watch(expiredItemsProvider);
+
     return Scaffold(
       appBar: AppBar(title: Text(currentPlace.name)),
       floatingActionButton: FloatingActionButton(
@@ -123,43 +127,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                       value: stats['photos'].toString(),
                       icon: Icons.photo,
                     ),
-                  ],
-                );
-              },
-            ),
 
-            const SizedBox(height: 24),
-
-            Text(
-              'Important Items',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-
-            const SizedBox(height: 12),
-
-            importantAsync.when(
-              loading: () =>
-              const CircularProgressIndicator(),
-
-              error: (_, __) =>
-              const SizedBox(),
-
-              data: (items) {
-                if (items.isEmpty) {
-                  return const Text(
-                    'No important items',
-                  );
-                }
-
-                return Column(
-                  children: items
-                      .take(5)
-                      .map(
-                        (e) => ItemActivityTile(
-                      item: e,
+                    DashboardStatCard(
+                      title: 'Expiring',
+                      value: expiringAsync.value?.length.toString() ?? '0',
+                      icon: Icons.schedule,
                     ),
-                  )
-                      .toList(),
+                  ],
                 );
               },
             ),
@@ -187,6 +161,122 @@ class _HomePageState extends ConsumerState<HomePage> {
                   children: items
                       .take(5)
                       .map((e) => ItemActivityTile(item: e))
+                      .toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Important Items',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            importantAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No important items');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map((e) => ItemActivityTile(item: e))
+                      .toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Expiring Soon',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            expiringAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No items expiring soon');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map(
+                        (e) => Card(
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.schedule,
+                              color: Colors.orange,
+                            ),
+                            title: Text(e.name),
+                            subtitle: Text(
+                              'Expires: ${e.expiryDate?.day}/${e.expiryDate?.month}/${e.expiryDate?.year}',
+                            ),
+                            onTap: () {
+                              context.push('/node/${e.uuid}');
+                            },
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Expired Items',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+
+            const SizedBox(height: 12),
+
+            expiredAsync.when(
+              loading: () => const CircularProgressIndicator(),
+
+              error: (_, __) => const SizedBox(),
+
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text('No expired items');
+                }
+
+                return Column(
+                  children: items
+                      .take(5)
+                      .map(
+                        (e) => Card(
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.warning,
+                              color: Colors.red,
+                            ),
+                            title: Text(e.name),
+                            subtitle: Text(
+                              'Expired: ${e.expiryDate?.day}/${e.expiryDate?.month}/${e.expiryDate?.year}',
+                            ),
+                            onTap: () {
+                              context.push('/node/${e.uuid}');
+                            },
+                          ),
+                        ),
+                      )
                       .toList(),
                 );
               },

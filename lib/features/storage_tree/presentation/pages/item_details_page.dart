@@ -69,7 +69,57 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (node.isImportant) const Chip(label: Text('Important')),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (node.isImportant) const Chip(label: Text('Important')),
+
+                    if (node.trackExpiry)
+                      const Chip(label: Text('Expiry Tracked')),
+                  ],
+                ),
+
+                if (node.trackExpiry && node.expiryDate != null)
+                  Builder(
+                    builder: (_) {
+                      final daysLeft = node.expiryDate!
+                          .difference(DateTime.now())
+                          .inDays;
+
+                      Color color;
+
+                      String status;
+
+                      if (daysLeft < 0) {
+                        color = Colors.red;
+                        status = 'Expired';
+                      } else if (daysLeft <= 30) {
+                        color = Colors.orange;
+                        status = '$daysLeft days remaining';
+                      } else {
+                        color = Colors.green;
+                        status = '$daysLeft days remaining';
+                      }
+
+                      return Card(
+                        color: color.withOpacity(0.1),
+                        child: ListTile(
+                          leading: Icon(Icons.event, color: color),
+                          title: Text('Expiry Date'),
+                          subtitle: Text(
+                            '${node.expiryDate!.day}/${node.expiryDate!.month}/${node.expiryDate!.year}',
+                          ),
+                          trailing: Text(
+                            status,
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
 
                 pathAsync.when(
                   loading: () => const CircularProgressIndicator(),
