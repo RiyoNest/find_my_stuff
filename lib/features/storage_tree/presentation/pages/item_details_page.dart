@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:find_my_stuff/features/storage_tree/presentation/pages/photo_viewer_page.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_path_provider.dart';
 import 'package:flutter/material.dart';
@@ -98,11 +99,26 @@ class ItemDetailsPage extends ConsumerWidget {
                       ClipRRect(
                         borderRadius:
                         BorderRadius.circular(12),
-                        child: Image.file(
-                          File(node.photoPath!),
-                          height: 220,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PhotoViewerPage(
+                                  imagePath: node.photoPath!,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Hero(
+                            tag: node.photoPath!,
+                            child: Image.file(
+                              File(node.photoPath!),
+                              height: 220,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
                       ),
 

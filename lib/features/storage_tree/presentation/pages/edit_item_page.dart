@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:flutter/material.dart';
@@ -69,8 +70,13 @@ class _EditItemPageState
 
     if (file == null) return;
 
+    final savedPath =
+    await PhotoStorageService.savePhoto(
+      file.path,
+    );
+
     setState(() {
-      _photoPath = file.path;
+      _photoPath = savedPath;
     });
   }
 
@@ -82,8 +88,13 @@ class _EditItemPageState
 
     if (file == null) return;
 
+    final savedPath =
+    await PhotoStorageService.savePhoto(
+      file.path,
+    );
+
     setState(() {
-      _photoPath = file.path;
+      _photoPath = savedPath;
     });
   }
 
