@@ -21,9 +21,6 @@ void main() async {
   await ObjectBoxService.initialize();
   await DatabaseSeed.seed();
 
-  await AppReviewService.trackAppOpen();
-  await AppUpdateService.checkForUpdates();
-
   runApp(const ProviderScope(child: FindMyStuffApp()));
 }
 
@@ -35,8 +32,11 @@ class FindMyStuffApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'FindMyStuff',
       debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.system,
+
       theme: RAppTheme.lightTheme,
-      // darkTheme: RAppTheme.darkTheme,
+      darkTheme: RAppTheme.darkTheme,
+
       routerConfig: RAppRouter.router,
     );
   }

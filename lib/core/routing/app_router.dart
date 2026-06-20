@@ -12,7 +12,8 @@ class RAppRouter {
   static final router = GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const SplashPage()),
+      GoRoute(path: '/', builder: (context, state) => const HomePage()),
+      // GoRoute(path: '/', builder: (context, state) => const SplashPage()),
       GoRoute(path: '/home', builder: (context, state) => const HomePage()),
       GoRoute(
         path: '/room/:roomUuid',
