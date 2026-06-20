@@ -11,9 +11,7 @@ class PlaceRepository {
   }
 
   PlaceEntity? getByUuid(String uuid) {
-    final query = box.query(
-      PlaceEntity_.uuid.equals(uuid),
-    ).build();
+    final query = box.query(PlaceEntity_.uuid.equals(uuid)).build();
 
     final result = query.findFirst();
     query.close();
@@ -27,5 +25,9 @@ class PlaceRepository {
 
   void delete(int id) {
     box.remove(id);
+  }
+
+  void deleteAll() {
+    box.removeAll();
   }
 }

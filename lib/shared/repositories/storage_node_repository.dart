@@ -372,4 +372,8 @@ class StorageNodeRepository {
   void delete(int id) {
     box.remove(id);
   }
+
+  void deleteAll() {
+    box.removeAll();
+  }
 }

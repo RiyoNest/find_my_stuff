@@ -81,11 +81,18 @@ class _HomePageState extends ConsumerState<HomePage> {
               if (value == 'archive') {
                 context.push('/archived');
               }
+              if (value == 'settings') {
+                context.push('/settings');
+              }
             },
             itemBuilder: (_) => [
               const PopupMenuItem(
                 value: 'archive',
                 child: Text('Archived Items'),
+              ),
+              PopupMenuItem(
+                value: 'settings',
+                child: Text('Settings'),
               ),
             ],
           ),

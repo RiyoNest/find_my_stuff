@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/archive/presentation/pages/archived_items_page.dart';
 import '../../features/room/presentation/pages/room_details_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/storage_tree/presentation/pages/storage_node_details_page.dart';
 
 class RAppRouter {
@@ -36,6 +37,10 @@ class RAppRouter {
       GoRoute(
         path: '/archived',
         builder: (context, state) => const ArchivedItemsPage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
       ),
     ],
   );
