@@ -1,8 +1,12 @@
+import 'dart:io';
+
+import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/enums/node_type.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 class QuickAddItemPage extends ConsumerStatefulWidget {
@@ -27,12 +31,46 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
 
   DateTime? expiryDate;
 
+  String? photoPath;
+
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void dispose() {
     nameController.dispose();
     descriptionController.dispose();
     tagsController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickFromGallery() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (file == null) return;
+
+    final savedPath = await PhotoStorageService.savePhoto(file.path);
+
+    setState(() {
+      photoPath = savedPath;
+    });
+  }
+
+  Future<void> _takePhoto() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
+    if (file == null) return;
+
+    final savedPath = await PhotoStorageService.savePhoto(file.path);
+
+    setState(() {
+      photoPath = savedPath;
+    });
   }
 
   Future<void> _saveItem() async {
@@ -60,6 +98,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
       name: nameController.text.trim(),
       description: descriptionController.text.trim(),
       tags: tagsController.text.trim(),
+      photoPath: photoPath,
       isImportant: isImportant,
       trackExpiry: trackExpiry,
       expiryDate: expiryDate,
@@ -156,6 +195,47 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                     labelText: 'Tags',
                     border: OutlineInputBorder(),
                   ),
+                ),
+
+                const SizedBox(height: 16),
+
+                Text('Photo', style: Theme.of(context).textTheme.titleMedium),
+
+                const SizedBox(height: 12),
+
+                if (photoPath != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(photoPath!),
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickFromGallery,
+                        icon: const Icon(Icons.photo_library),
+                        label: const Text('Gallery'),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _takePhoto,
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Camera'),
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 16),

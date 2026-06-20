@@ -1,3 +1,4 @@
+import 'package:find_my_stuff/features/dashboard/presentation/pages/dashboard_items_page.dart';
 import 'package:find_my_stuff/features/room/presentation/widgets/add_room_dialog.dart';
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/quick_add_item_page.dart';
 import 'package:find_my_stuff/shared/entities/place_entity.dart';
@@ -145,25 +146,106 @@ class _HomePageState extends ConsumerState<HomePage> {
                       title: 'Items',
                       value: stats['items'].toString(),
                       icon: Icons.inventory_2,
+                      onTap: () {
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'All Items',
+                              items: repo.getAllItems(),
+                            ),
+                          ),
+                        );
+                      },
                     ),
 
                     DashboardStatCard(
                       title: 'Important',
                       value: stats['important'].toString(),
                       icon: Icons.star,
+                      onTap: () {
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'Important Items',
+                              items: repo.getImportantItems(
+                                limit: 999999,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
 
                     DashboardStatCard(
                       title: 'Photos',
                       value: stats['photos'].toString(),
                       icon: Icons.photo,
+                      onTap: () {
+                        final repo = ref.read(storageNodeRepositoryProvider);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'Items With Photos',
+                              items: repo.getItemsWithPhotosList(),
+                            ),
+                          ),
+                        );
+                      },
                     ),
 
                     DashboardStatCard(
                       title: 'Expiring',
                       value: expiringAsync.value?.length.toString() ?? '0',
                       icon: Icons.schedule,
+                      onTap: () {
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'Expiring Items',
+                              items: repo.getExpiringItems(
+                                days: 3650,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
+                    DashboardStatCard(
+                      title: 'Expired',
+                      value: expiredAsync.value?.length.toString() ?? '0',
+                      icon: Icons.warning,
+                      onTap: () {
+                        final repo = ref.read(storageNodeRepositoryProvider);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'Expired Items',
+                              items: repo.getExpiredItems(),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
                   ],
                 );
               },

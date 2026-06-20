@@ -350,6 +350,21 @@ class StorageNodeRepository {
     }).toList();
   }
 
+  List<StorageNodeEntity> getItemsWithPhotosList() {
+    return box.getAll().where((node) {
+      return node.nodeType == NodeType.item.name &&
+          !node.isArchived &&
+          node.photoPath != null &&
+          node.photoPath!.isNotEmpty;
+    }).toList();
+  }
+
+  List<StorageNodeEntity> getAllItems() {
+    return box.getAll().where((node) {
+      return node.nodeType == NodeType.item.name && !node.isArchived;
+    }).toList();
+  }
+
   int save(StorageNodeEntity node) {
     return box.put(node);
   }
