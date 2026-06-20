@@ -1,4 +1,7 @@
+import 'package:find_my_stuff/features/dashboard/presentation/pages/dashboard_items_page.dart';
+import 'package:find_my_stuff/features/gallery/presentation/pages/photo_gallery_page.dart';
 import 'package:find_my_stuff/features/room/presentation/widgets/add_room_dialog.dart';
+import 'package:find_my_stuff/features/storage_tree/presentation/pages/quick_add_item_page.dart';
 import 'package:find_my_stuff/shared/entities/place_entity.dart';
 import 'package:find_my_stuff/shared/entities/room_entity.dart';
 import 'package:find_my_stuff/shared/providers/room_providers.dart';
@@ -71,7 +74,31 @@ class _HomePageState extends ConsumerState<HomePage> {
     final expiredAsync = ref.watch(expiredItemsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(currentPlace.name)),
+      appBar: AppBar(
+        title: Text(currentPlace.name),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'archive') {
+                context.push('/archived');
+              }
+              if (value == 'settings') {
+                context.push('/settings');
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'archive',
+                child: Text('Archived Items'),
+              ),
+              PopupMenuItem(
+                value: 'settings',
+                child: Text('Settings'),
+              ),
+            ],
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'home_fab',
         onPressed: _addRoom,
@@ -87,6 +114,19 @@ class _HomePageState extends ConsumerState<HomePage> {
               leading: const Icon(Icons.search),
               onTap: () {
                 context.push('/search');
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Quick Add Item'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QuickAddItemPage()),
+                );
               },
             ),
 
@@ -114,25 +154,107 @@ class _HomePageState extends ConsumerState<HomePage> {
                       title: 'Items',
                       value: stats['items'].toString(),
                       icon: Icons.inventory_2,
+                      onTap: () {
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'All Items',
+                              items: repo.getAllItems(),
+                            ),
+                          ),
+                        );
+                      },
                     ),
 
                     DashboardStatCard(
                       title: 'Important',
                       value: stats['important'].toString(),
                       icon: Icons.star,
+                      onTap: () {
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'Important Items',
+                              items: repo.getImportantItems(
+                                limit: 999999,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
 
                     DashboardStatCard(
                       title: 'Photos',
                       value: stats['photos'].toString(),
                       icon: Icons.photo,
+                      onTap: () {
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PhotoGalleryPage(
+                              items: repo.getItemsWithPhotosList(),
+                            ),
+                          ),
+                        );
+                      },
                     ),
 
                     DashboardStatCard(
                       title: 'Expiring',
                       value: expiringAsync.value?.length.toString() ?? '0',
                       icon: Icons.schedule,
+                      onTap: () {
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'Expiring Items',
+                              items: repo.getExpiringItems(
+                                days: 3650,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
+                    DashboardStatCard(
+                      title: 'Expired',
+                      value: expiredAsync.value?.length.toString() ?? '0',
+                      icon: Icons.warning,
+                      onTap: () {
+                        final repo = ref.read(storageNodeRepositoryProvider);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DashboardItemsPage(
+                              title: 'Expired Items',
+                              items: repo.getExpiredItems(),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
                   ],
                 );
               },

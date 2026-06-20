@@ -25,14 +25,27 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: Text(
-          'FindMyStuff',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/logo/app_logo.png',
+              width: 140,
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Find My Stuff',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+
+            const SizedBox(height: 12),
+
+            const CircularProgressIndicator(),
+          ],
         ),
       ),
     );

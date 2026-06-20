@@ -6,9 +6,7 @@ class RoomRepository {
   final box = ObjectBoxService.store.box<RoomEntity>();
 
   List<RoomEntity> getRoomsByPlace(String placeUuid) {
-    final query = box.query(
-      RoomEntity_.placeUuid.equals(placeUuid),
-    ).build();
+    final query = box.query(RoomEntity_.placeUuid.equals(placeUuid)).build();
 
     final rooms = query.find();
 
@@ -18,9 +16,7 @@ class RoomRepository {
   }
 
   RoomEntity? getByUuid(String uuid) {
-    final query = box.query(
-      RoomEntity_.uuid.equals(uuid),
-    ).build();
+    final query = box.query(RoomEntity_.uuid.equals(uuid)).build();
 
     final room = query.findFirst();
 
@@ -29,12 +25,15 @@ class RoomRepository {
     return room;
   }
 
-
   int save(RoomEntity room) {
     return box.put(room);
   }
 
   void delete(int id) {
     box.remove(id);
+  }
+
+  void deleteAll() {
+    box.removeAll();
   }
 }
