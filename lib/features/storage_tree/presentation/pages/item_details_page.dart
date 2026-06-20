@@ -68,61 +68,36 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                 onPressed: () async {
                   await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => MoveNodePage(
-                        node: node,
-                      ),
-                    ),
+                    MaterialPageRoute(builder: (_) => MoveNodePage(node: node)),
                   );
 
-                  ref.read(
-                    storageRefreshProvider.notifier,
-                  ).state++;
+                  ref.read(storageRefreshProvider.notifier).state++;
 
                   if (mounted) {
-                    ref.invalidate(
-                      storageNodeProvider(
-                        widget.nodeUuid,
-                      ),
-                    );
+                    ref.invalidate(storageNodeProvider(widget.nodeUuid));
                   }
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.archive),
                 onPressed: () async {
-                  final confirmed =
-                  await showDialog<bool>(
+                  final confirmed = await showDialog<bool>(
                     context: context,
                     builder: (_) => AlertDialog(
-                      title: const Text(
-                        'Archive Item',
-                      ),
-                      content: Text(
-                        'Move "${node.name}" to archive?',
-                      ),
+                      title: const Text('Archive Item'),
+                      content: Text('Move "${node.name}" to archive?'),
                       actions: [
                         TextButton(
                           onPressed: () {
-                            Navigator.pop(
-                              context,
-                              false,
-                            );
+                            Navigator.pop(context, false);
                           },
-                          child: const Text(
-                            'Cancel',
-                          ),
+                          child: const Text('Cancel'),
                         ),
                         FilledButton(
                           onPressed: () {
-                            Navigator.pop(
-                              context,
-                              true,
-                            );
+                            Navigator.pop(context, true);
                           },
-                          child: const Text(
-                            'Archive',
-                          ),
+                          child: const Text('Archive'),
                         ),
                       ],
                     ),
@@ -132,17 +107,11 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                     return;
                   }
 
-                  final repo = ref.read(
-                    storageNodeRepositoryProvider,
-                  );
+                  final repo = ref.read(storageNodeRepositoryProvider);
 
-                  repo.archiveItem(
-                    node.uuid,
-                  );
+                  repo.archiveItem(node.uuid);
 
-                  ref.read(
-                    storageRefreshProvider.notifier,
-                  ).state++;
+                  ref.read(storageRefreshProvider.notifier).state++;
 
                   if (context.mounted) {
                     Navigator.pop(context);
@@ -256,19 +225,32 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    PhotoViewerPage(imagePath: node.photoPath!),
+                                builder: (_) => PhotoViewerPage(
+                                  imagePath: node.photoPath!,
+                                  itemUuid: node.uuid,
+                                  itemName: node.name,
+                                ),
                               ),
                             );
                           },
                           child: Hero(
                             tag: node.photoPath!,
-                            child: Image.file(
-                              File(node.photoPath!),
-                              height: 220,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                            child: File(node.photoPath!).existsSync()
+                                ? Image.file(
+                                    File(node.photoPath!),
+                                    height: 220,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    height: 220,
+                                    width: double.infinity,
+                                    color: Colors.grey.shade200,
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 60,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),

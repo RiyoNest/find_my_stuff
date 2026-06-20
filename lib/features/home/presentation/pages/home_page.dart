@@ -1,4 +1,5 @@
 import 'package:find_my_stuff/features/dashboard/presentation/pages/dashboard_items_page.dart';
+import 'package:find_my_stuff/features/gallery/presentation/pages/photo_gallery_page.dart';
 import 'package:find_my_stuff/features/room/presentation/widgets/add_room_dialog.dart';
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/quick_add_item_page.dart';
 import 'package:find_my_stuff/shared/entities/place_entity.dart';
@@ -198,13 +199,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                       value: stats['photos'].toString(),
                       icon: Icons.photo,
                       onTap: () {
-                        final repo = ref.read(storageNodeRepositoryProvider);
+                        final repo = ref.read(
+                          storageNodeRepositoryProvider,
+                        );
 
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => DashboardItemsPage(
-                              title: 'Items With Photos',
+                            builder: (_) => PhotoGalleryPage(
                               items: repo.getItemsWithPhotosList(),
                             ),
                           ),

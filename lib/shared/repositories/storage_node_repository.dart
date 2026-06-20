@@ -351,12 +351,16 @@ class StorageNodeRepository {
   }
 
   List<StorageNodeEntity> getItemsWithPhotosList() {
-    return box.getAll().where((node) {
+    final items = box.getAll().where((node) {
       return node.nodeType == NodeType.item.name &&
           !node.isArchived &&
           node.photoPath != null &&
           node.photoPath!.isNotEmpty;
     }).toList();
+
+    items.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+    return items;
   }
 
   List<StorageNodeEntity> getAllItems() {
