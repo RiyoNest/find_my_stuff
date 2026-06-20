@@ -10,7 +10,7 @@
     </queries>
 
     <application
-        android:label="find_my_stuff"
+        android:label="Find My Stuff"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

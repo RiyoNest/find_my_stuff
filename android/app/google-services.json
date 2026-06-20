@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "931214992433",
+    "project_id": "find-my-stuff-f3d6f",
+    "storage_bucket": "find-my-stuff-f3d6f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:931214992433:android:da393d959c822a014e2110",
+        "android_client_info": {
+          "package_name": "com.riyonest.find_my_stuff"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCS-yNK7mUS4NQipc304C_vQWVywztYeYc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
