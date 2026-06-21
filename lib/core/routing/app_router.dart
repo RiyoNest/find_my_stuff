@@ -1,5 +1,19 @@
+// File: lib/core/routing/app_router.dart
+//
+// CHANGE from your version: added routes for /quick-add, /dashboard-items,
+// and /photos. Previously these three pages were only reachable via
+// Navigator.push(MaterialPageRoute(...)) from the Home page, while
+// everything else used context.push() (go_router) — inconsistent
+// back-stack and deep-link behavior. Now everything goes through
+// go_router. Pages needing a list (DashboardItemsPage, PhotoGalleryPage)
+// receive it via `extra` since URLs can't carry full object lists.
+
+import 'package:find_my_stuff/features/dashboard/presentation/pages/dashboard_items_page.dart';
+import 'package:find_my_stuff/features/gallery/presentation/pages/photo_gallery_page.dart';
 import 'package:find_my_stuff/features/home/presentation/pages/home_page.dart';
 import 'package:find_my_stuff/features/splash/presentation/pages/splash_page.dart';
+import 'package:find_my_stuff/features/storage_tree/presentation/pages/quick_add_item_page.dart';
+import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/archive/presentation/pages/archived_items_page.dart';
@@ -14,7 +28,7 @@ class RAppRouter {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomePage()),
       // GoRoute(path: '/', builder: (context, state) => const SplashPage()),
-      GoRoute(path: '/home', builder: (context, state) => const HomePage()),
+      // GoRoute(path: '/home', builder: (context, state) => const HomePage()),
       GoRoute(
         path: '/room/:roomUuid',
         builder: (context, state) {
@@ -42,6 +56,27 @@ class RAppRouter {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: '/quick-add',
+        builder: (context, state) => const QuickAddItemPage(),
+      ),
+      GoRoute(
+        path: '/dashboard-items',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return DashboardItemsPage(
+            title: extra['title'] as String,
+            items: extra['items'] as List<StorageNodeEntity>,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/photos',
+        builder: (context, state) {
+          final items = state.extra as List<StorageNodeEntity>;
+          return PhotoGalleryPage(items: items);
+        },
       ),
     ],
   );
