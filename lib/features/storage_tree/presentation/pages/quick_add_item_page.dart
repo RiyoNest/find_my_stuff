@@ -1,16 +1,23 @@
 // File: lib/features/storage_tree/presentation/pages/quick_add_item_page.dart
 //
-// CHANGES from your version:
-//   - Wrapped fields in a Form with TextFormField + ValidationHelpers
-//     validators (was: only an empty-string check on submit, and only
-//     for name/destination).
-//   - Replaced raw ScaffoldMessenger SnackBars with AppSnackBar
-//     (success/error/warning) for consistent styling app-wide.
-//   - Added character counters via maxLength on name/description/tags.
-//   - Save button now runs full form validation, not just two ad-hoc checks.
+// CHANGES in this version:
+//   - "Add Item To" destination list is now a fixed-height card with its
+//     own internal scroll + live search filter. Previously the radio list
+//     grew unbounded (every room × location × section × container), so
+//     at 10+ destinations the user had to scroll past the entire list
+//     before reaching the form fields. Now the picker is always 220px,
+//     the rest of the form is immediately reachable, and the user can
+//     type to filter destinations instead of scrolling.
+//   - Selected destination shown as a highlighted chip above the list
+//     so the user can always see their choice even after scrolling away.
+//   - Everything else (validation, AppSnackBar, loading state on save
+//     button) is unchanged from the previous version.
 
 import 'dart:io';
 
+import 'package:find_my_stuff/core/constants/app_colours.dart';
+import 'package:find_my_stuff/core/constants/app_radius.dart';
+import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 import 'package:find_my_stuff/core/utils/validation_helpers.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
@@ -32,26 +39,40 @@ class QuickAddItemPage extends ConsumerStatefulWidget {
 class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   final _formKey = GlobalKey<FormState>();
 
-  StorageNodeEntity? selectedDestination;
+  StorageNodeEntity? _selectedDestination;
   String? _destinationError;
 
-  final nameController = TextEditingController();
-  final descriptionController = TextEditingController();
-  final tagsController = TextEditingController();
+  // Separate controller for the destination search field —
+  // kept out of the Form so it doesn't interfere with form validation.
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
-  bool isImportant = false;
-  bool trackExpiry = false;
-  DateTime? expiryDate;
-  String? photoPath;
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _tagsController = TextEditingController();
+
+  bool _isImportant = false;
+  bool _trackExpiry = false;
+  DateTime? _expiryDate;
+  String? _photoPath;
   bool _isSaving = false;
 
-  final ImagePicker _picker = ImagePicker();
+  final _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.toLowerCase());
+    });
+  }
 
   @override
   void dispose() {
-    nameController.dispose();
-    descriptionController.dispose();
-    tagsController.dispose();
+    _searchController.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
@@ -60,12 +81,9 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
       source: ImageSource.gallery,
       imageQuality: 80,
     );
-
     if (file == null) return;
-
-    final savedPath = await PhotoStorageService.savePhoto(file.path);
-
-    setState(() => photoPath = savedPath);
+    final saved = await PhotoStorageService.savePhoto(file.path);
+    setState(() => _photoPath = saved);
   }
 
   Future<void> _takePhoto() async {
@@ -73,33 +91,36 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
       source: ImageSource.camera,
       imageQuality: 80,
     );
-
     if (file == null) return;
-
-    final savedPath = await PhotoStorageService.savePhoto(file.path);
-
-    setState(() => photoPath = savedPath);
+    final saved = await PhotoStorageService.savePhoto(file.path);
+    setState(() => _photoPath = saved);
   }
 
   Future<void> _saveItem() async {
     setState(() {
       _destinationError =
-      selectedDestination == null ? 'Please select a destination' : null;
+      _selectedDestination == null ? 'Please select a destination' : null;
     });
 
     final formValid = _formKey.currentState?.validate() ?? false;
 
-    if (!formValid || selectedDestination == null) {
-      if (selectedDestination == null) {
-        AppSnackBar.warning(context, 'Please select a destination for this item');
+    if (!formValid || _selectedDestination == null) {
+      if (_selectedDestination == null) {
+        AppSnackBar.warning(
+          context,
+          'Please select a destination for this item',
+        );
       } else {
         AppSnackBar.warning(context, 'Please fix the highlighted fields');
       }
       return;
     }
 
-    if (trackExpiry && expiryDate == null) {
-      AppSnackBar.warning(context, 'Please select an expiry date, or turn off Track Expiry');
+    if (_trackExpiry && _expiryDate == null) {
+      AppSnackBar.warning(
+        context,
+        'Please select an expiry date, or turn off Track Expiry',
+      );
       return;
     }
 
@@ -110,22 +131,21 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
 
       final item = StorageNodeEntity(
         uuid: const Uuid().v4(),
-        roomUuid: selectedDestination!.roomUuid,
-        parentUuid: selectedDestination!.uuid,
+        roomUuid: _selectedDestination!.roomUuid,
+        parentUuid: _selectedDestination!.uuid,
         nodeType: NodeType.item.name,
-        name: ValidationHelpers.sanitize(nameController.text),
-        description: descriptionController.text.trim(),
-        tags: tagsController.text.trim(),
-        photoPath: photoPath,
-        isImportant: isImportant,
-        trackExpiry: trackExpiry,
-        expiryDate: expiryDate,
+        name: ValidationHelpers.sanitize(_nameController.text),
+        description: _descriptionController.text.trim(),
+        tags: _tagsController.text.trim(),
+        photoPath: _photoPath,
+        isImportant: _isImportant,
+        trackExpiry: _trackExpiry,
+        expiryDate: _expiryDate,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       repo.save(item);
-
       ref.read(storageRefreshProvider.notifier).state++;
 
       if (mounted) {
@@ -151,14 +171,15 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(RAppSpacing.lg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text("Couldn't load destinations: $e"),
-                const SizedBox(height: 12),
+                const SizedBox(height: RAppSpacing.sm),
                 TextButton.icon(
-                  onPressed: () => ref.invalidate(quickAddDestinationsProvider),
+                  onPressed: () =>
+                      ref.invalidate(quickAddDestinationsProvider),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
                 ),
@@ -169,6 +190,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
         data: (destinations) {
           final repo = ref.read(storageNodeRepositoryProvider);
 
+          // Sort deepest paths first (most specific destination at top).
           destinations.sort(
                 (a, b) => repo
                 .getPathToRoot(b)
@@ -179,17 +201,17 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
           if (destinations.isEmpty) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(RAppSpacing.lg),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.location_off_outlined, size: 48),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: RAppSpacing.sm),
                     const Text(
                       'No locations available yet',
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: RAppSpacing.xs),
                     Text(
                       'Create a Room and a Location first, then come back here.',
                       textAlign: TextAlign.center,
@@ -201,20 +223,57 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
             );
           }
 
+          // Apply search filter.
+          final filtered = _searchQuery.isEmpty
+              ? destinations
+              : destinations.where((d) {
+            final path = repo.buildPath(d).toLowerCase();
+            return d.name.toLowerCase().contains(_searchQuery) ||
+                path.contains(_searchQuery);
+          }).toList();
+
           return Form(
             key: _formKey,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(RAppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Destination Picker ──────────────────────────────
                   Text(
                     'Add Item To',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
+                  const SizedBox(height: RAppSpacing.xs),
+                  Text(
+                    'Choose where this item will be stored',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+
+                  // Selected destination summary chip.
+                  if (_selectedDestination != null) ...[
+                    const SizedBox(height: RAppSpacing.sm),
+                    Chip(
+                      avatar: Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: RAppColors.success,
+                      ),
+                      label: Text(
+                        _selectedDestination!.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      deleteIcon: const Icon(Icons.close, size: 16),
+                      onDeleted: () => setState(() {
+                        _selectedDestination = null;
+                        _destinationError = 'Please select a destination';
+                      }),
+                    ),
+                  ],
+
                   if (_destinationError != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: RAppSpacing.xs),
                       child: Text(
                         _destinationError!,
                         style: TextStyle(
@@ -224,29 +283,160 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                       ),
                     ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: RAppSpacing.sm),
 
-                  ...destinations.map((destination) {
-                    final path = repo.buildPath(destination);
+                  // Fixed-height searchable list card.
+                  Container(
+                    height: 220,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: RAppColors.border),
+                      borderRadius: BorderRadius.circular(RAppRadius.md),
+                    ),
+                    child: Column(
+                      children: [
+                        // Search field pinned at top of the card.
+                        Padding(
+                          padding: const EdgeInsets.all(RAppSpacing.sm),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search locations...',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                                  : null,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: RAppSpacing.sm,
+                                vertical: RAppSpacing.sm,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                BorderRadius.circular(RAppRadius.sm),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        // Scrollable list of matching destinations.
+                        Expanded(
+                          child: filtered.isEmpty
+                              ? Center(
+                            child: Text(
+                              'No matches for "$_searchQuery"',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                color: RAppColors.textSecondary,
+                              ),
+                            ),
+                          )
+                              : ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: filtered.length,
+                            itemBuilder: (_, index) {
+                              final dest = filtered[index];
+                              final path = repo.buildPath(dest);
+                              final isSelected =
+                                  _selectedDestination?.uuid == dest.uuid;
 
-                    return RadioListTile<StorageNodeEntity>(
-                      value: destination,
-                      groupValue: selectedDestination,
-                      title: Text(destination.name),
-                      subtitle: Text(path),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedDestination = value;
-                          _destinationError = null;
-                        });
-                      },
-                    );
-                  }),
+                              return InkWell(
+                                onTap: () => setState(() {
+                                  _selectedDestination = dest;
+                                  _destinationError = null;
+                                }),
+                                child: Container(
+                                  color: isSelected
+                                      ? Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer
+                                      .withOpacity(0.4)
+                                      : null,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: RAppSpacing.md,
+                                    vertical: RAppSpacing.sm,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isSelected
+                                            ? Icons.radio_button_checked
+                                            : Icons
+                                            .radio_button_unchecked,
+                                        size: 20,
+                                        color: isSelected
+                                            ? Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            : RAppColors.textSecondary,
+                                      ),
+                                      const SizedBox(
+                                        width: RAppSpacing.sm,
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              dest.name,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w600
+                                                    : null,
+                                              ),
+                                              maxLines: 1,
+                                              overflow:
+                                              TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              path,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.copyWith(
+                                                color: RAppColors
+                                                    .textSecondary,
+                                              ),
+                                              maxLines: 1,
+                                              overflow:
+                                              TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                  const Divider(height: 32),
+                  const SizedBox(height: RAppSpacing.lg),
+
+                  // ── Item Details ────────────────────────────────────
+                  Text(
+                    'Item Details',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: RAppSpacing.md),
 
                   TextFormField(
-                    controller: nameController,
+                    controller: _nameController,
                     maxLength: ValidationHelpers.maxItemNameLength,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
@@ -257,10 +447,10 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: RAppSpacing.md),
 
                   TextFormField(
-                    controller: descriptionController,
+                    controller: _descriptionController,
                     maxLines: 3,
                     maxLength: 500,
                     decoration: const InputDecoration(
@@ -271,10 +461,10 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: RAppSpacing.md),
 
                   TextFormField(
-                    controller: tagsController,
+                    controller: _tagsController,
                     maxLength: 200,
                     decoration: const InputDecoration(
                       labelText: 'Tags',
@@ -285,24 +475,36 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: RAppSpacing.md),
 
-                  Text('Photo', style: Theme.of(context).textTheme.titleMedium),
+                  // ── Photo ───────────────────────────────────────────
+                  Text(
+                    'Photo',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: RAppSpacing.sm),
 
-                  const SizedBox(height: 12),
-
-                  if (photoPath != null)
+                  if (_photoPath != null) ...[
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(RAppRadius.md),
                       child: Image.file(
-                        File(photoPath!),
+                        File(_photoPath!),
                         height: 200,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
                     ),
-
-                  const SizedBox(height: 12),
+                    const SizedBox(height: RAppSpacing.sm),
+                    TextButton.icon(
+                      onPressed: () => setState(() => _photoPath = null),
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Remove photo'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: RAppColors.error,
+                      ),
+                    ),
+                    const SizedBox(height: RAppSpacing.sm),
+                  ],
 
                   Row(
                     children: [
@@ -313,7 +515,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                           label: const Text('Gallery'),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: RAppSpacing.sm),
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _takePhoto,
@@ -324,49 +526,54 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: RAppSpacing.sm),
 
+                  // ── Options ─────────────────────────────────────────
                   SwitchListTile(
-                    value: isImportant,
-                    title: const Text('Important Item'),
-                    onChanged: (value) => setState(() => isImportant = value),
+                    value: _isImportant,
+                    title: const Text('Mark as Important'),
+                    secondary: const Icon(Icons.star_outline),
+                    onChanged: (v) => setState(() => _isImportant = v),
                   ),
 
                   SwitchListTile(
-                    value: trackExpiry,
+                    value: _trackExpiry,
                     title: const Text('Track Expiry'),
-                    onChanged: (value) {
-                      setState(() {
-                        trackExpiry = value;
-                        if (!value) expiryDate = null;
-                      });
-                    },
+                    secondary: const Icon(Icons.schedule_outlined),
+                    onChanged: (v) => setState(() {
+                      _trackExpiry = v;
+                      if (!v) _expiryDate = null;
+                    }),
                   ),
 
-                  if (trackExpiry)
+                  if (_trackExpiry)
                     ListTile(
+                      leading: const Icon(Icons.calendar_today),
                       title: Text(
-                        expiryDate == null
+                        _expiryDate == null
                             ? 'Select Expiry Date'
-                            : expiryDate.toString().split(' ').first,
+                            : _expiryDate.toString().split(' ').first,
+                        style: _expiryDate == null
+                            ? TextStyle(color: RAppColors.textSecondary)
+                            : null,
                       ),
-                      trailing: const Icon(Icons.calendar_today),
+                      trailing: const Icon(Icons.chevron_right),
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
                           firstDate: DateTime.now(),
                           lastDate: DateTime(2100),
-                          initialDate: DateTime.now(),
+                          initialDate: _expiryDate ?? DateTime.now(),
                         );
-
                         if (picked != null) {
-                          setState(() => expiryDate = picked);
+                          setState(() => _expiryDate = picked);
                         }
                       },
                     ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: RAppSpacing.lg),
 
+                  // ── Save ────────────────────────────────────────────
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
@@ -375,12 +582,15 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                           ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child:
+                        CircularProgressIndicator(strokeWidth: 2),
                       )
                           : const Icon(Icons.save),
                       label: Text(_isSaving ? 'Saving...' : 'Save Item'),
                     ),
                   ),
+
+                  const SizedBox(height: RAppSpacing.xl),
                 ],
               ),
             ),

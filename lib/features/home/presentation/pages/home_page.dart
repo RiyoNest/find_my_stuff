@@ -238,8 +238,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                           Text("Couldn't load rooms: $err"),
                           const SizedBox(height: RAppSpacing.sm),
                           TextButton.icon(
-                            onPressed: () => ref
-                                .invalidate(roomListProvider(currentPlace.uuid)),
+                            onPressed: () => ref.invalidate(
+                              roomListProvider(currentPlace.uuid),
+                            ),
                             icon: const Icon(Icons.refresh),
                             label: const Text('Retry'),
                           ),
@@ -259,61 +260,72 @@ class _HomePageState extends ConsumerState<HomePage> {
                           // 2-column grid did with an odd card count.
                           statsAsync.when(
                             loading: () => const SizedBox(
-                              height: 96,
+                              height: 100,
                               child: Center(child: CircularProgressIndicator()),
                             ),
                             error: (_, __) => const SizedBox(),
                             data: (stats) => FadeInScale(
                               duration: const Duration(milliseconds: 350),
-                              child: SizedBox(
-                                height: 96,
-                                child: ListView(
-                                  scrollDirection: Axis.horizontal,
-                                  children: [
-                                    SizedBox(
-                                      width: 150,
-                                      child: DashboardStatCard(
-                                        title: 'Items',
-                                        value: stats['items'].toString(),
-                                        icon: Icons.inventory_2,
-                                        onTap: () => _openFilteredItems(
-                                          'All Items',
-                                          ref
-                                              .read(storageNodeRepositoryProvider)
-                                              .getAllItems(),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      SizedBox(
+                                        width: 150,
+                                        child: DashboardStatCard(
+                                          title: 'Items',
+                                          value: stats['items'].toString(),
+                                          icon: Icons.inventory_2,
+                                          onTap: () => _openFilteredItems(
+                                            'All Items',
+                                            ref
+                                                .read(
+                                                  storageNodeRepositoryProvider,
+                                                )
+                                                .getAllItems(),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: RAppSpacing.sm + 4),
-                                    SizedBox(
-                                      width: 150,
-                                      child: DashboardStatCard(
-                                        title: 'Important',
-                                        value: stats['important'].toString(),
-                                        icon: Icons.star,
-                                        onTap: () => _openFilteredItems(
-                                          'Important Items',
-                                          ref
-                                              .read(storageNodeRepositoryProvider)
-                                              .getImportantItems(limit: 999999),
+                                      const SizedBox(width: RAppSpacing.sm + 4),
+                                      SizedBox(
+                                        width: 150,
+                                        child: DashboardStatCard(
+                                          title: 'Important',
+                                          value: stats['important'].toString(),
+                                          icon: Icons.star,
+                                          onTap: () => _openFilteredItems(
+                                            'Important Items',
+                                            ref
+                                                .read(
+                                                  storageNodeRepositoryProvider,
+                                                )
+                                                .getImportantItems(
+                                                  limit: 999999,
+                                                ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: RAppSpacing.sm + 4),
-                                    SizedBox(
-                                      width: 150,
-                                      child: DashboardStatCard(
-                                        title: 'Photos',
-                                        value: stats['photos'].toString(),
-                                        icon: Icons.photo,
-                                        onTap: () => _openPhotos(
-                                          ref
-                                              .read(storageNodeRepositoryProvider)
-                                              .getItemsWithPhotosList(),
+                                      const SizedBox(width: RAppSpacing.sm + 4),
+                                      SizedBox(
+                                        width: 150,
+                                        child: DashboardStatCard(
+                                          title: 'Photos',
+                                          value: stats['photos'].toString(),
+                                          icon: Icons.photo,
+                                          onTap: () => _openPhotos(
+                                            ref
+                                                .read(
+                                                  storageNodeRepositoryProvider,
+                                                )
+                                                .getItemsWithPhotosList(),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -332,28 +344,36 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ],
                           ),
                           const SizedBox(height: RAppSpacing.sm + 4),
-                          SizedBox(
-                            height: 116,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: rooms.length + 1,
-                              separatorBuilder: (_, __) =>
-                              const SizedBox(width: RAppSpacing.sm + 2),
-                              itemBuilder: (_, index) {
-                                if (index == rooms.length) {
-                                  return _AddRoomCard(onTap: _addRoom);
-                                }
-                                final room = rooms[index];
-                                return FadeInScale(
-                                  delayMilliseconds: index * 50,
-                                  duration: const Duration(milliseconds: 300),
-                                  child: RoomCard(
-                                    room: room,
-                                    onTap: () =>
-                                        context.push('/room/${room.uuid}'),
-                                  ),
-                                );
-                              },
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index < rooms.length;
+                                    index++
+                                  ) ...[
+                                    if (index > 0)
+                                      const SizedBox(width: RAppSpacing.sm + 2),
+                                    FadeInScale(
+                                      delayMilliseconds: index * 50,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      child: RoomCard(
+                                        room: rooms[index],
+                                        onTap: () => context.push(
+                                          '/room/${rooms[index].uuid}',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(width: RAppSpacing.sm + 2),
+                                  _AddRoomCard(onTap: _addRoom),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -364,8 +384,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                           Container(
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceContainerLow,
-                              borderRadius:
-                              BorderRadius.circular(RAppRadius.lg),
+                              borderRadius: BorderRadius.circular(
+                                RAppRadius.lg,
+                              ),
                             ),
                             child: AnimatedExpandableSection(
                               title: 'Insights',
@@ -380,10 +401,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     data: (expiring) {
                                       final totalItems =
                                           statsAsync.value?['items'] ?? 0;
-                                      final active = (totalItems -
-                                          expired.length -
-                                          expiring.length)
-                                          .clamp(0, totalItems);
+                                      final active =
+                                          (totalItems -
+                                                  expired.length -
+                                                  expiring.length)
+                                              .clamp(0, totalItems);
 
                                       return ExpiryStatusChart(
                                         expired: expired.length,
@@ -420,8 +442,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ButtonSegment(
                                 value: _ActivityFilter.forgotten,
                                 label: Text('Forgotten'),
-                                icon: Icon(Icons.visibility_off_outlined,
-                                    size: 16),
+                                icon: Icon(
+                                  Icons.visibility_off_outlined,
+                                  size: 16,
+                                ),
                               ),
                             ],
                             selected: {_activityFilter},

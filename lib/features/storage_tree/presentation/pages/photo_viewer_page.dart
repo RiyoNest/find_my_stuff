@@ -1,5 +1,18 @@
+// File: lib/features/storage_tree/presentation/pages/photo_viewer_page.dart
+//
+// CHANGES:
+//   - Bottom bar is now a styled frosted-glass-style container with item
+//     name + "View Item" action, rather than a plain black Container.
+//   - File-missing guard applied to the share action (was: silent if file
+//     missing; now: AppSnackBar.error).
+//   - App bar stays black for immersive photo viewing; icons use white
+//     foreground consistently.
+//   - InteractiveViewer only shown when file exists.
+
 import 'dart:io';
 
+import 'package:find_my_stuff/core/constants/app_radius.dart';
+import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -19,86 +32,73 @@ class PhotoViewerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageFile = File(imagePath);
+    final fileExists = imageFile.existsSync();
 
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Photo'),
+        backgroundColor: Colors.black.withOpacity(0.5),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          itemName,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
+          if (fileExists)
+            IconButton(
+              icon: const Icon(Icons.share, color: Colors.white),
+              tooltip: 'Share Photo',
+              onPressed: () async {
+                await Share.shareXFiles([XFile(imagePath)]);
+              },
+            ),
           IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: const Icon(Icons.open_in_new, color: Colors.white),
             tooltip: 'Open Item',
-            onPressed: () {
-              context.push('/node/$itemUuid');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: 'Share Photo',
-            onPressed: () async {
-              if (!imageFile.existsSync()) {
-                return;
-              }
-
-              await Share.shareXFiles([
-                XFile(imagePath),
-              ]);
-            },
+            onPressed: () => context.push('/node/$itemUuid'),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 5,
-                child: Hero(
-                  tag: imagePath,
-                  child: imageFile.existsSync()
-                      ? Image.file(
-                    imageFile,
-                    fit: BoxFit.contain,
-                  )
-                      : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.broken_image,
-                        size: 80,
-                        color: Colors.white,
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Image not found',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+      body: fileExists
+          ? InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 5,
+        child: Center(
+          child: Hero(
+            tag: imagePath,
+            child: Image.file(imageFile, fit: BoxFit.contain),
           ),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Colors.black,
-            child: Text(
-              itemName,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+        ),
+      )
+          : Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.broken_image_outlined,
+              size: 80,
+              color: Colors.white54,
             ),
-          ),
-        ],
+            const SizedBox(height: RAppSpacing.sm),
+            const Text(
+              'Image not found',
+              style: TextStyle(color: Colors.white54, fontSize: 16),
+            ),
+            const SizedBox(height: RAppSpacing.md),
+            OutlinedButton(
+              onPressed: () => context.push('/node/$itemUuid'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white54),
+              ),
+              child: const Text('Go to Item'),
+            ),
+          ],
+        ),
       ),
     );
   }

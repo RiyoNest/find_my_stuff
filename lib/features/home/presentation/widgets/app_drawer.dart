@@ -37,22 +37,20 @@ class AppDrawer extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(RAppSpacing.sm + 4),
+                    // padding: const EdgeInsets.all(RAppSpacing.sm + 4),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(RAppRadius.md),
                     ),
-                    child: Icon(
-                      Icons.inventory_2_outlined,
-                      size: 32,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
+                    child: Image.asset('assets/logo/app_logo.png', width: 50),
+                    // Icon(
+                    //   Icons.inventory_2_outlined,
+                    //   size: 32,
+                    //   color: theme.colorScheme.onPrimaryContainer,
+                    // ),
                   ),
                   const SizedBox(height: RAppSpacing.sm),
-                  Text(
-                    'FindMyStuff',
-                    style: theme.textTheme.titleLarge,
-                  ),
+                  Text('FindMyStuff', style: theme.textTheme.titleLarge),
                   Text(
                     'v1.0.0',
                     style: theme.textTheme.labelMedium?.copyWith(
@@ -118,28 +116,28 @@ class AppDrawer extends ConsumerWidget {
               label: 'About FindMyStuff',
               onTap: () => _showAboutDialog(context),
             ),
-            _DrawerTile(
-              icon: Icons.description_outlined,
-              label: 'Terms & Privacy',
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Terms & Privacy - Coming Soon'),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: RAppSpacing.lg),
-            Center(
-              child: Text(
-                '© 2024 FindMyStuff\nMade with care',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: RAppColors.textSecondary,
-                ),
-              ),
-            ),
+            // _DrawerTile(
+            //   icon: Icons.description_outlined,
+            //   label: 'Terms & Privacy',
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     ScaffoldMessenger.of(context).showSnackBar(
+            //       const SnackBar(
+            //         content: Text('Terms & Privacy - Coming Soon'),
+            //       ),
+            //     );
+            //   },
+            // ),
+            // const SizedBox(height: RAppSpacing.lg),
+            // Center(
+            //   child: Text(
+            //     '© 2026 FindMyStuff',
+            //     textAlign: TextAlign.center,
+            //     style: theme.textTheme.labelMedium?.copyWith(
+            //       color: RAppColors.textSecondary,
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -168,27 +166,27 @@ class AppDrawer extends ConsumerWidget {
               const _FaqItem(
                 question: 'How do I organize my items?',
                 answer:
-                'Navigate through Place to Room to Location to Section or Container to Item. Each level can contain the next level down, allowing flexible organization.',
+                    'Navigate through Place to Room to Location to Section or Container to Item. Each level can contain the next level down, allowing flexible organization.',
               ),
               const _FaqItem(
                 question: 'What does Quick Add Item do?',
                 answer:
-                'Quick Add Item lets you add items directly to any location without navigating the full hierarchy. It appears once you have some locations set up.',
+                    'Quick Add Item lets you add items directly to any location without navigating the full hierarchy. It appears once you have some locations set up.',
               ),
               const _FaqItem(
                 question: 'Can I move items between locations?',
                 answer:
-                'Yes. Open an item, tap Move, and select a new parent location. Items can move between rooms and locations freely.',
+                    'Yes. Open an item, tap Move, and select a new parent location. Items can move between rooms and locations freely.',
               ),
               const _FaqItem(
                 question: 'What does archiving do?',
                 answer:
-                'Archiving hides items from your main view without deleting them. Archived items can be recovered from the Archived Items section.',
+                    'Archiving hides items from your main view without deleting them. Archived items can be recovered from the Archived Items section.',
               ),
               const _FaqItem(
                 question: 'Is my data stored online?',
                 answer:
-                'No, FindMyStuff is completely offline-first. All your data is stored locally on your device. No internet required.',
+                    'No, FindMyStuff is completely offline-first. All your data is stored locally on your device. No internet required.',
               ),
               const SizedBox(height: RAppSpacing.md),
               SizedBox(
@@ -234,12 +232,6 @@ class AppDrawer extends ConsumerWidget {
               label: 'Website',
               value: 'www.findmystuff.app',
             ),
-            const SizedBox(height: RAppSpacing.sm),
-            const _ContactOption(
-              icon: Icons.chat_bubble_outline,
-              label: 'Discord',
-              value: 'discord.gg/findmystuff',
-            ),
           ],
         ),
         actions: [
@@ -280,9 +272,9 @@ class AppDrawer extends ConsumerWidget {
               const SizedBox(height: RAppSpacing.md),
               Text(
                 'Features:',
-                style: Theme.of(dialogContext).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  dialogContext,
+                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: RAppSpacing.sm),
               const _AboutFeature(
