@@ -1,17 +1,21 @@
 // File: lib/shared/widgets/app_drawer.dart
 //
-// Custom navigation drawer with theme selection, settings, and useful links.
-// Provides access to FAQs, contact developer, about app, and other features.
-// Uses RAppRadius / RAppSpacing / RAppColors tokens for visual consistency
-// with the rest of the app. Theme mode reads/writes themeModeProvider
-// directly so the drawer doesn't need callback props threaded through
-// every page that includes it.
+// CHANGES in this version:
+//   - About dialog: app identity block (logo + name + version from
+//     AppInfoService), _AboutInfoRow rows for Developer / Contact /
+//     Version using the emoji-icon pattern, feature list with real icons.
+//   - Contact dialog: tappable _ContactCard tiles with clipboard copy.
+//   - Bug report: structured guidance dialog instead of a SnackBar no-op.
+//   - FAQ: header icon + arrow chevron animation on expand.
+//   - v1.0.0 hardcode in header replaced with AppInfoService.fullVersion.
 
 import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
+import 'package:find_my_stuff/core/services/app_info_service.dart';
 import 'package:find_my_stuff/shared/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AppDrawer extends ConsumerWidget {
@@ -31,28 +35,23 @@ class AppDrawer extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(RAppSpacing.md),
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.symmetric(vertical: RAppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    // padding: const EdgeInsets.all(RAppSpacing.sm + 4),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(RAppRadius.md),
                     ),
                     child: Image.asset('assets/logo/app_logo.png', width: 50),
-                    // Icon(
-                    //   Icons.inventory_2_outlined,
-                    //   size: 32,
-                    //   color: theme.colorScheme.onPrimaryContainer,
-                    // ),
                   ),
                   const SizedBox(height: RAppSpacing.sm),
                   Text('FindMyStuff', style: theme.textTheme.titleLarge),
                   Text(
-                    'v1.0.0',
+                    AppInfoService.fullVersion,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: RAppColors.textSecondary,
                     ),
@@ -60,30 +59,22 @@ class AppDrawer extends ConsumerWidget {
                 ],
               ),
             ),
+
             const Divider(height: RAppSpacing.lg),
             const SizedBox(height: RAppSpacing.xs),
-            Text(
-              'Appearance',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: RAppColors.textSecondary,
-              ),
-            ),
+
+            _SectionLabel('Appearance'),
             const SizedBox(height: RAppSpacing.sm),
             _ThemeSelector(
               currentTheme: currentTheme,
               onThemeChanged: onThemeChanged,
             ),
+
             const SizedBox(height: RAppSpacing.lg),
             const Divider(height: RAppSpacing.lg),
             const SizedBox(height: RAppSpacing.xs),
-            Text(
-              'Help & Support',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: RAppColors.textSecondary,
-              ),
-            ),
+
+            _SectionLabel('Help & Support'),
             const SizedBox(height: RAppSpacing.sm),
             _DrawerTile(
               icon: Icons.help_outline_rounded,
@@ -100,99 +91,120 @@ class AppDrawer extends ConsumerWidget {
               label: 'Report a Bug',
               onTap: () => _showBugReportDialog(context),
             ),
+
             const SizedBox(height: RAppSpacing.lg),
             const Divider(height: RAppSpacing.lg),
             const SizedBox(height: RAppSpacing.xs),
-            Text(
-              'About',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: RAppColors.textSecondary,
-              ),
-            ),
+
+            _SectionLabel('About'),
             const SizedBox(height: RAppSpacing.sm),
             _DrawerTile(
               icon: Icons.info_outline_rounded,
               label: 'About FindMyStuff',
               onTap: () => _showAboutDialog(context),
             ),
-            // _DrawerTile(
-            //   icon: Icons.description_outlined,
-            //   label: 'Terms & Privacy',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     ScaffoldMessenger.of(context).showSnackBar(
-            //       const SnackBar(
-            //         content: Text('Terms & Privacy - Coming Soon'),
-            //       ),
-            //     );
-            //   },
-            // ),
-            // const SizedBox(height: RAppSpacing.lg),
-            // Center(
-            //   child: Text(
-            //     '© 2026 FindMyStuff',
-            //     textAlign: TextAlign.center,
-            //     style: theme.textTheme.labelMedium?.copyWith(
-            //       color: RAppColors.textSecondary,
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),
     );
   }
 
-  void _showFaqDialog(BuildContext context) {
+  // ── About ──────────────────────────────────────────────────────────────
+  void _showAboutDialog(BuildContext context) {
     Navigator.pop(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => Dialog(
+      builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(RAppRadius.lg),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(RAppSpacing.lg - 4),
+          padding: const EdgeInsets.all(RAppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // App identity block
+              Container(
+                padding: const EdgeInsets.all(RAppSpacing.md),
+                decoration: BoxDecoration(
+                  color: Theme.of(ctx).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(RAppRadius.md),
+                ),
+                child: Image.asset('assets/logo/app_logo.png', width: 64),
+              ),
+              const SizedBox(height: RAppSpacing.sm),
+              Text('FindMyStuff', style: Theme.of(ctx).textTheme.titleLarge),
               Text(
-                'Frequently Asked Questions',
-                style: Theme.of(dialogContext).textTheme.titleMedium,
+                AppInfoService.fullVersion,
+                style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                  color: RAppColors.textSecondary,
+                ),
               ),
+
+              const SizedBox(height: RAppSpacing.lg),
+              const Divider(),
               const SizedBox(height: RAppSpacing.md),
-              const _FaqItem(
-                question: 'How do I organize my items?',
-                answer:
-                    'Navigate through Place to Room to Location to Section or Container to Item. Each level can contain the next level down, allowing flexible organization.',
+
+              // Info rows
+              _AboutInfoRow(emoji: '👨‍💻', title: 'Developer', value: 'Ruban'),
+              const SizedBox(height: RAppSpacing.sm),
+              _AboutInfoRow(
+                emoji: '📧',
+                title: 'Contact',
+                value: 'riyooruban@gmail.com',
+                copyable: true,
+                snackContext: ctx,
               ),
-              const _FaqItem(
-                question: 'What does Quick Add Item do?',
-                answer:
-                    'Quick Add Item lets you add items directly to any location without navigating the full hierarchy. It appears once you have some locations set up.',
+              const SizedBox(height: RAppSpacing.sm),
+              _AboutInfoRow(
+                emoji: '🚀',
+                title: 'Version',
+                value: AppInfoService.fullVersion,
               ),
-              const _FaqItem(
-                question: 'Can I move items between locations?',
-                answer:
-                    'Yes. Open an item, tap Move, and select a new parent location. Items can move between rooms and locations freely.',
-              ),
-              const _FaqItem(
-                question: 'What does archiving do?',
-                answer:
-                    'Archiving hides items from your main view without deleting them. Archived items can be recovered from the Archived Items section.',
-              ),
-              const _FaqItem(
-                question: 'Is my data stored online?',
-                answer:
-                    'No, FindMyStuff is completely offline-first. All your data is stored locally on your device. No internet required.',
-              ),
+
+              const SizedBox(height: RAppSpacing.lg),
+              const Divider(),
               const SizedBox(height: RAppSpacing.md),
+
+              // Features
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'What FindMyStuff does',
+                  style: Theme.of(ctx).textTheme.titleSmall,
+                ),
+              ),
+              const SizedBox(height: RAppSpacing.sm),
+              const _AboutFeature(
+                icon: Icons.account_tree_outlined,
+                text: 'Organise items hierarchically by room, location, and container',
+              ),
+              const _AboutFeature(
+                icon: Icons.search_rounded,
+                text: 'Search items instantly across your entire place',
+              ),
+              const _AboutFeature(
+                icon: Icons.star_outline_rounded,
+                text: 'Mark important items for quick access',
+              ),
+              const _AboutFeature(
+                icon: Icons.schedule_rounded,
+                text: 'Track expiry dates for perishables',
+              ),
+              const _AboutFeature(
+                icon: Icons.photo_camera_outlined,
+                text: 'Add photos to identify items visually',
+              ),
+              const _AboutFeature(
+                icon: Icons.wifi_off_rounded,
+                text: 'Completely offline — no internet required',
+              ),
+
+              const SizedBox(height: RAppSpacing.lg),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext),
+                  onPressed: () => Navigator.pop(ctx),
                   child: const Text('Close'),
                 ),
               ),
@@ -203,11 +215,12 @@ class AppDrawer extends ConsumerWidget {
     );
   }
 
+  // ── Contact ────────────────────────────────────────────────────────────
   void _showContactDialog(BuildContext context) {
     Navigator.pop(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(RAppRadius.lg),
         ),
@@ -217,26 +230,28 @@ class AppDrawer extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Have feedback or questions? Reach out.',
-              style: Theme.of(dialogContext).textTheme.bodyMedium,
+              'Have feedback, ideas, or found a problem? Get in touch.',
+              style: Theme.of(ctx).textTheme.bodyMedium,
             ),
             const SizedBox(height: RAppSpacing.md),
-            const _ContactOption(
-              icon: Icons.email,
-              label: 'Email',
-              value: 'developer@findmystuff.app',
+            _ContactCard(
+              icon: Icons.person_outline_rounded,
+              label: 'Developer',
+              value: 'Ruban',
             ),
             const SizedBox(height: RAppSpacing.sm),
-            const _ContactOption(
-              icon: Icons.language,
-              label: 'Website',
-              value: 'www.findmystuff.app',
+            _ContactCard(
+              icon: Icons.email_outlined,
+              label: 'Email',
+              value: 'riyooruban@gmail.com',
+              copyable: true,
+              snackContext: ctx,
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Close'),
           ),
         ],
@@ -244,58 +259,154 @@ class AppDrawer extends ConsumerWidget {
     );
   }
 
+  // ── Bug Report ─────────────────────────────────────────────────────────
   void _showBugReportDialog(BuildContext context) {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Bug report feature coming soon')),
-    );
-  }
-
-  void _showAboutDialog(BuildContext context) {
     Navigator.pop(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(RAppRadius.lg),
         ),
-        title: const Text('About FindMyStuff'),
-        content: SingleChildScrollView(
+        title: Row(
+          children: [
+            Icon(
+              Icons.bug_report_outlined,
+              color: Theme.of(ctx).colorScheme.primary,
+              size: 20,
+            ),
+            const SizedBox(width: RAppSpacing.sm),
+            const Text('Report a Bug'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Found something that looks wrong? Send an email with:',
+              style: Theme.of(ctx).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: RAppSpacing.md),
+            _BulletPoint('What you were trying to do'),
+            _BulletPoint('What happened instead'),
+            _BulletPoint('Your device model (optional)'),
+            const SizedBox(height: RAppSpacing.md),
+            _ContactCard(
+              icon: Icons.email_outlined,
+              label: 'Send to',
+              value: 'riyooruban@gmail.com',
+              copyable: true,
+              snackContext: ctx,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── FAQ ────────────────────────────────────────────────────────────────
+  void _showFaqDialog(BuildContext context) {
+    Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(RAppRadius.lg),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(RAppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "FindMyStuff is an offline-first app that helps you remember where you've stored your belongings.",
-                style: Theme.of(dialogContext).textTheme.bodyMedium,
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(RAppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: Theme.of(ctx).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(RAppRadius.sm),
+                    ),
+                    child: Icon(
+                      Icons.help_outline_rounded,
+                      color: Theme.of(ctx).colorScheme.onPrimaryContainer,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: RAppSpacing.sm),
+                  Text('FAQs', style: Theme.of(ctx).textTheme.titleMedium),
+                ],
               ),
               const SizedBox(height: RAppSpacing.md),
-              Text(
-                'Features:',
-                style: Theme.of(
-                  dialogContext,
-                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+
+              const _FaqItem(
+                question: 'How do I organise my items?',
+                answer:
+                'Navigate: Place → Room → Location → Section/Container → Item. Each level holds the next. Tap the + button on any page to add the next level down.',
               ),
-              const SizedBox(height: RAppSpacing.sm),
-              const _AboutFeature(
-                'Organize items hierarchically by room, location, and container',
+              const _FaqItem(
+                question: 'What does Quick Add Item do?',
+                answer:
+                'Quick Add Item lets you add items directly to any location without navigating the full hierarchy. It appears on the Home screen once you have at least one location set up.',
               ),
-              const _AboutFeature(
-                'Search items instantly across your entire place',
+              const _FaqItem(
+                question: 'Can I move items between locations?',
+                answer:
+                'Yes. Open any item, tap Move in the action bar at the bottom, then choose a new location from the searchable list.',
               ),
-              const _AboutFeature('Mark important items for quick access'),
-              const _AboutFeature('Track expiry dates for perishables'),
-              const _AboutFeature('Add photos to identify items visually'),
-              const _AboutFeature('Completely offline, no internet required'),
+              const _FaqItem(
+                question: 'What does archiving do?',
+                answer:
+                'Archiving hides items from your main view without deleting them. You can restore archived items anytime from the Archived Items page in the menu.',
+              ),
+              const _FaqItem(
+                question: "What's the difference between Section and Container?",
+                answer:
+                'A Section is a logical grouping (e.g. "Top Shelf", "Left Side"). A Container is a physical object (e.g. "Red Box", "Drawer"). Both can hold more sections, containers, or items.',
+              ),
+              const _FaqItem(
+                question: 'Is my data stored online?',
+                answer:
+                'No. FindMyStuff is fully offline. All data lives on your device — no account, no internet needed.',
+              ),
+
+              const SizedBox(height: RAppSpacing.md),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Got it'),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
-          ),
-        ],
+      ),
+    );
+  }
+}
+
+// ── Shared sub-widgets ──────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: RAppColors.textSecondary,
       ),
     );
   }
@@ -362,7 +473,6 @@ class _ThemeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(RAppRadius.sm),
@@ -414,6 +524,220 @@ class _DrawerTile extends StatelessWidget {
   }
 }
 
+/// Emoji + title + value info row used in the About dialog.
+class _AboutInfoRow extends StatelessWidget {
+  final String emoji;
+  final String title;
+  final String value;
+  final bool copyable;
+  final BuildContext? snackContext;
+
+  const _AboutInfoRow({
+    required this.emoji,
+    required this.title,
+    required this.value,
+    this.copyable = false,
+    this.snackContext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: copyable && snackContext != null
+          ? () {
+        Clipboard.setData(ClipboardData(text: value));
+        ScaffoldMessenger.of(snackContext!).showSnackBar(
+          SnackBar(
+            content: Text('$title copied to clipboard'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(RAppRadius.md),
+            ),
+          ),
+        );
+      }
+          : null,
+      borderRadius: BorderRadius.circular(RAppRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: RAppSpacing.sm + 4,
+          vertical: RAppSpacing.sm + 2,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(RAppRadius.sm),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: RAppSpacing.sm + 4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: RAppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (copyable)
+              Icon(
+                Icons.copy_outlined,
+                size: 16,
+                color: RAppColors.textSecondary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tappable contact card with icon + label + value + optional clipboard copy.
+class _ContactCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool copyable;
+  final BuildContext? snackContext;
+
+  const _ContactCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.copyable = false,
+    this.snackContext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(RAppRadius.md),
+      onTap: copyable && snackContext != null
+          ? () {
+        Clipboard.setData(ClipboardData(text: value));
+        ScaffoldMessenger.of(snackContext!).showSnackBar(
+          SnackBar(
+            content: Text('$label copied to clipboard'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(RAppRadius.md),
+            ),
+          ),
+        );
+      }
+          : null,
+      child: Container(
+        padding: const EdgeInsets.all(RAppSpacing.md),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(RAppRadius.md),
+          border: Border.all(color: RAppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(RAppSpacing.sm),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(RAppRadius.sm),
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: RAppSpacing.sm + 4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: RAppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (copyable)
+              Icon(Icons.copy_outlined, size: 16, color: RAppColors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Feature row in the About dialog.
+class _AboutFeature extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _AboutFeature({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: RAppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: RAppSpacing.sm),
+          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bullet point used in the Bug Report dialog.
+class _BulletPoint extends StatelessWidget {
+  final String text;
+  const _BulletPoint(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: RAppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Expandable FAQ accordion with animated chevron.
 class _FaqItem extends StatefulWidget {
   final String question;
   final String answer;
@@ -425,7 +749,7 @@ class _FaqItem extends StatefulWidget {
 }
 
 class _FaqItemState extends State<_FaqItem> {
-  bool isExpanded = false;
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -439,7 +763,7 @@ class _FaqItemState extends State<_FaqItem> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(RAppRadius.sm),
-        onTap: () => setState(() => isExpanded = !isExpanded),
+        onTap: () => setState(() => _expanded = !_expanded),
         child: Padding(
           padding: const EdgeInsets.all(RAppSpacing.sm + 4),
           child: Column(
@@ -455,91 +779,22 @@ class _FaqItemState extends State<_FaqItem> {
                       ),
                     ),
                   ),
-                  Icon(
-                    isExpanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 20,
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more_rounded, size: 20),
                   ),
                 ],
               ),
-              if (isExpanded) ...[
+              if (_expanded) ...[
+                const SizedBox(height: RAppSpacing.sm),
+                const Divider(height: 1),
                 const SizedBox(height: RAppSpacing.sm),
                 Text(widget.answer, style: theme.textTheme.bodyMedium),
               ],
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ContactOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _ContactOption({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Icon(icon, size: 20),
-        const SizedBox(width: RAppSpacing.sm + 4),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: RAppColors.textSecondary,
-                ),
-              ),
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AboutFeature extends StatelessWidget {
-  final String text;
-
-  const _AboutFeature(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: RAppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 16,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: RAppSpacing.sm),
-          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
-        ],
       ),
     );
   }
