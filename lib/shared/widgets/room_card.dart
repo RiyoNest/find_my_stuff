@@ -1,131 +1,199 @@
-// File: lib/shared/widgets/room_card.dart
-
-import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:find_my_stuff/shared/entities/room_entity.dart';
 import 'package:flutter/material.dart';
 
-class RoomCard extends StatelessWidget {
+class RoomCard extends StatefulWidget {
   final RoomEntity room;
+  final int itemCount;
+  final int containerCount;
   final VoidCallback onTap;
 
-  const RoomCard({super.key, required this.room, required this.onTap});
+  const RoomCard({
+    super.key,
+    required this.room,
+    required this.itemCount,
+    required this.containerCount,
+    required this.onTap,
+  });
+
+  @override
+  State<RoomCard> createState() => _RoomCardState();
+}
+
+class _RoomCardState extends State<RoomCard> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final roomName = room.name.toLowerCase().trim();
+    final isDark = theme.brightness == Brightness.dark;
+    final roomName = widget.room.name.toLowerCase().trim();
 
     // Default Visual Style (Hall/Default)
-    Color bgColor = const Color(0xFFFFF5F8);
-    Color iconColor = const Color(0xFFD10047);
-    Color borderColor = const Color(0xFFF8D7E3);
-    IconData icon = Icons.meeting_room_rounded;
+    Color bgColor = isDark ? const Color(0xFF2C1E23) : const Color(0xFFFFF5F8);
+    Color tintColor = const Color(0xFFD10047);
+    Color borderColor = isDark ? const Color(0xFF4C1E2B) : const Color(0xFFF8D7E3);
+    String emoji = '🚪';
 
+    // Parse room type heuristics for premium styling
     if (roomName.contains('bedroom') || roomName.contains('bed room') || roomName.contains('bed')) {
-      bgColor = const Color(0xFFFFF0F2);
-      iconColor = const Color(0xFFD10047);
-      borderColor = const Color(0xFFF8D7E3);
-      icon = Icons.bed_rounded;
+      bgColor = isDark ? const Color(0xFF3B1E22) : const Color(0xFFFFF0F2);
+      tintColor = const Color(0xFFD10047);
+      borderColor = isDark ? const Color(0xFF5A1E26) : const Color(0xFFF8D7E3);
+      emoji = '🛏️';
     } else if (roomName.contains('kitchen') || roomName.contains('cook')) {
-      bgColor = const Color(0xFFFFF8E1);
-      iconColor = const Color(0xFFE65100);
-      borderColor = const Color(0xFFFFE082);
-      icon = Icons.kitchen_rounded;
+      bgColor = isDark ? const Color(0xFF3E2C1A) : const Color(0xFFFFF8E1);
+      tintColor = const Color(0xFFE65100);
+      borderColor = isDark ? const Color(0xFF5C3F24) : const Color(0xFFFFE082);
+      emoji = '🍳';
     } else if (roomName.contains('garage') || roomName.contains('car')) {
-      bgColor = const Color(0xFFECEFF1);
-      iconColor = const Color(0xFF455A64);
-      borderColor = const Color(0xFFCFD8DC);
-      icon = Icons.garage_rounded;
+      bgColor = isDark ? const Color(0xFF263238) : const Color(0xFFECEFF1);
+      tintColor = const Color(0xFF455A64);
+      borderColor = isDark ? const Color(0xFF37474F) : const Color(0xFFCFD8DC);
+      emoji = '🚗';
     } else if (roomName.contains('office') || roomName.contains('study') || roomName.contains('desk') || roomName.contains('work')) {
-      bgColor = const Color(0xFFE8F5E9);
-      iconColor = const Color(0xFF2E7D32);
-      borderColor = const Color(0xFFC8E6C9);
-      icon = Icons.desktop_windows_rounded;
+      bgColor = isDark ? const Color(0xFF1E3A20) : const Color(0xFFE8F5E9);
+      tintColor = const Color(0xFF2E7D32);
+      borderColor = isDark ? const Color(0xFF2E5E32) : const Color(0xFFC8E6C9);
+      emoji = '💻';
     } else if (roomName.contains('bathroom') || roomName.contains('bath') || roomName.contains('toilet') || roomName.contains('wash') || roomName.contains('shower')) {
-      bgColor = const Color(0xFFE0F7FA);
-      iconColor = const Color(0xFF00838F);
-      borderColor = const Color(0xFFB2EBF2);
-      icon = Icons.bathtub_rounded;
+      bgColor = isDark ? const Color(0xFF113D40) : const Color(0xFFE0F7FA);
+      tintColor = const Color(0xFF00838F);
+      borderColor = isDark ? const Color(0xFF1F5E63) : const Color(0xFFB2EBF2);
+      emoji = '🚿';
     } else if (roomName.contains('store') || roomName.contains('pantry') || roomName.contains('closet') || roomName.contains('wardrobe') || roomName.contains('utility')) {
-      bgColor = const Color(0xFFEFEBE9);
-      iconColor = const Color(0xFF5D4037);
-      borderColor = const Color(0xFFD7CCC8);
-      icon = Icons.inventory_2_rounded;
+      bgColor = isDark ? const Color(0xFF2E2421) : const Color(0xFFEFEBE9);
+      tintColor = const Color(0xFF5D4037);
+      borderColor = isDark ? const Color(0xFF4A3B37) : const Color(0xFFD7CCC8);
+      emoji = '📦';
     } else if (roomName.contains('living') || roomName.contains('hall') || roomName.contains('lounge') || roomName.contains('sitting') || roomName.contains('tv')) {
-      bgColor = const Color(0xFFEDE7F6);
-      iconColor = const Color(0xFF651FFF);
-      borderColor = const Color(0xFFD1C4E9);
-      icon = Icons.chair_rounded;
+      bgColor = isDark ? const Color(0xFF221A30) : const Color(0xFFEDE7F6);
+      tintColor = const Color(0xFF651FFF);
+      borderColor = isDark ? const Color(0xFF382A52) : const Color(0xFFD1C4E9);
+      emoji = '🛋️';
     } else if (roomName.contains('dining')) {
-      bgColor = const Color(0xFFF1F8E9);
-      iconColor = const Color(0xFF33691E);
-      borderColor = const Color(0xFFDCEDC8);
-      icon = Icons.restaurant_rounded;
+      bgColor = isDark ? const Color(0xFF23301D) : const Color(0xFFF1F8E9);
+      tintColor = const Color(0xFF33691E);
+      borderColor = isDark ? const Color(0xFF374D2E) : const Color(0xFFDCEDC8);
+      emoji = '🍽️';
     } else if (roomName.contains('balcony') || roomName.contains('terrace') || roomName.contains('garden') || roomName.contains('yard')) {
-      bgColor = const Color(0xFFE8F5E9);
-      iconColor = const Color(0xFF1B5E20);
-      borderColor = const Color(0xFFC8E6C9);
-      icon = Icons.yard_rounded;
+      bgColor = isDark ? const Color(0xFF1B331E) : const Color(0xFFE8F5E9);
+      tintColor = const Color(0xFF1B5E20);
+      borderColor = isDark ? const Color(0xFF2A4D2E) : const Color(0xFFC8E6C9);
+      emoji = '🏡';
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(RAppRadius.lg),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: iconColor.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(RAppRadius.lg),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
-          onTap: onTap,
-          hoverColor: iconColor.withOpacity(0.05),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: RAppSpacing.sm + 6,
-              vertical: RAppSpacing.sm + 10,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(RAppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.12),
-                    shape: BoxShape.circle,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.03 : 1.00,
+        duration: const Duration(milliseconds: 180),
+        child: Semantics(
+          label: '${widget.room.name} room card',
+          button: true,
+          child: Tooltip(
+            message: 'View details of ${widget.room.name}',
+            child: Container(
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                border: Border.all(color: borderColor, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
+                    blurRadius: _isHovered ? 10 : 5,
+                    offset: Offset(0, _isHovered ? 5 : 2),
                   ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 22,
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(RAppRadius.lg),
+                  onTap: widget.onTap,
+                  hoverColor: tintColor.withOpacity(0.04),
+                  splashColor: tintColor.withOpacity(0.1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              emoji,
+                              style: const TextStyle(fontSize: 32),
+                            ),
+                            // Metadata Chips row
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildBadgeChip(context, '📦', widget.itemCount, isDark, theme),
+                                const SizedBox(width: 4),
+                                _buildBadgeChip(context, '🗂', widget.containerCount, isDark, theme),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: RAppSpacing.md),
+                        Text(
+                          widget.room.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: RAppSpacing.sm + 6),
-                Text(
-                  room.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: RAppColors.textPrimary,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBadgeChip(BuildContext context, String icon, int count, bool isDark, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4) : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline.withOpacity(0.2) : const Color(0xFFECEFF1),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            icon,
+            style: const TextStyle(fontSize: 10),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
     );
   }

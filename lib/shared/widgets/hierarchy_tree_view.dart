@@ -7,7 +7,6 @@ import '../providers/storage_node_providers.dart';
 import '../entities/storage_node_entity.dart';
 import '../enums/node_type.dart';
 import 'safe_image_widget.dart';
-import '../../core/constants/app_colours.dart';
 
 class HierarchyTreeView extends ConsumerWidget {
   final String rootUuid;
@@ -22,6 +21,7 @@ class HierarchyTreeView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final childrenAsync = ref.watch(nodeChildrenProvider(rootUuid));
+    final theme = Theme.of(context);
 
     return childrenAsync.when(
       loading: () => const Center(
@@ -33,12 +33,12 @@ class HierarchyTreeView extends ConsumerWidget {
       error: (e, _) => Center(child: Text('Error loading tree: $e')),
       data: (children) {
         if (children.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
             child: Center(
               child: Text(
                 'No contents inside this location',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
             ),
           );
@@ -82,18 +82,23 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
     final isTerminal = node.nodeType == NodeType.item.name;
     final isActive = widget.activeNodeUuid == node.uuid;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final textStyle = theme.textTheme.bodyMedium?.copyWith(
       fontSize: 14,
       fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-      color: isActive ? const Color(0xFFD10047) : RAppColors.textPrimary,
+      color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurface,
     );
+
+    final activeBgColor = isActive
+        ? (isDark ? theme.colorScheme.primary.withOpacity(0.15) : const Color(0xFFFFF5F8))
+        : Colors.transparent;
 
     if (isTerminal) {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFFFF5F8) : Colors.transparent,
+          color: activeBgColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: ListTile(
@@ -102,7 +107,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: isActive ? const Color(0xFFFFF5F8) : Colors.transparent,
+              color: activeBgColor,
               borderRadius: BorderRadius.circular(4),
             ),
             child: SafeImageWidget(
@@ -111,7 +116,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
               placeholder: Icon(
                 Icons.label_outline,
                 size: 16,
-                color: isActive ? const Color(0xFFD10047) : Colors.grey[500],
+                color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -124,7 +129,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
           trailing: Icon(
             Icons.chevron_right_rounded,
             size: 16,
-            color: isActive ? const Color(0xFFD10047) : Colors.grey[400],
+            color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
           ),
           onTap: () => context.push('/node/${node.uuid}'),
         ),
@@ -136,7 +141,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFFFF5F8) : Colors.transparent,
+        color: activeBgColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Theme(
@@ -146,7 +151,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
           shape: const Border(),
           collapsedShape: const Border(),
           iconColor: const Color(0xFFD10047),
-          collapsedIconColor: Colors.grey[500],
+          collapsedIconColor: theme.colorScheme.onSurfaceVariant,
           title: Row(
             children: [
               Icon(
@@ -154,7 +159,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
                     ? Icons.inventory_2_outlined
                     : Icons.view_agenda_outlined,
                 size: 18,
-                color: isActive ? const Color(0xFFD10047) : Colors.grey[500],
+                color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -169,14 +174,14 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
           ),
           leading: Container(
             decoration: BoxDecoration(
-              color: isActive ? const Color(0xFFFFF5F8) : Colors.transparent,
+              color: activeBgColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
               icon: Icon(
                 Icons.open_in_new_rounded,
                 size: 16,
-                color: isActive ? const Color(0xFFD10047) : Colors.grey[600],
+                color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant,
               ),
               tooltip: 'Open',
               onPressed: () => context.push('/node/${node.uuid}'),
@@ -205,15 +210,15 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
                 ),
                 data: (children) {
                   if (children.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.fromLTRB(54, 4, 16, 12),
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(54, 4, 16, 12),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, size: 12, color: Colors.grey),
-                          SizedBox(width: 4),
+                          Icon(Icons.info_outline, size: 12, color: theme.colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 4),
                           Text(
                             'Empty Location',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
                           ),
                         ],
                       ),
@@ -223,10 +228,10 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
                   return Container(
                     margin: const EdgeInsets.only(left: 36.0, right: 12.0),
                     padding: const EdgeInsets.only(left: 4.0),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(
-                          color: Color(0xFFF8D7E3),
+                          color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
                           width: 1.0,
                         ),
                       ),

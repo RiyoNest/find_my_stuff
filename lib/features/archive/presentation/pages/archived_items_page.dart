@@ -10,6 +10,7 @@ import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
 import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
 import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
+import 'package:find_my_stuff/shared/utils/responsive_grid_delegate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -108,10 +109,16 @@ class _ArchivedItemsPageState extends ConsumerState<ArchivedItemsPage> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          final cols = ResponsiveLayout.getColumns(context);
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
             itemCount: filtered.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cols,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: cols == 1 ? 3.5 : 1.3,
+            ),
             itemBuilder: (_, index) {
               final item = filtered[index];
               return _ArchivedItemTile(item: item);
@@ -200,7 +207,7 @@ class _ArchivedItemTile extends ConsumerWidget {
                     item.name,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: RAppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -210,7 +217,7 @@ class _ArchivedItemTile extends ConsumerWidget {
                     Text(
                       path,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: RAppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

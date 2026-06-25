@@ -130,8 +130,8 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 // Option label
-                                Card(
-                                  color: Colors.black87,
+                                 Card(
+                                  color: Theme.of(context).colorScheme.inverseSurface,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(RAppRadius.sm),
                                   ),
@@ -143,8 +143,8 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                                     ),
                                     child: Text(
                                       item.label,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onInverseSurface,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -153,15 +153,22 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                                 ),
                                 const SizedBox(width: 8),
                                 // Option FAB
-                                FloatingActionButton.small(
-                                  heroTag: 'sd_fab_$index',
-                                  onPressed: () {
-                                    _close();
-                                    item.onTap();
-                                  },
-                                  backgroundColor: const Color(0xFFD10047),
-                                  foregroundColor: Colors.white,
-                                  child: Icon(item.icon, size: 18),
+                                Semantics(
+                                  label: item.label,
+                                  button: true,
+                                  child: Tooltip(
+                                    message: item.label,
+                                    child: FloatingActionButton.small(
+                                      heroTag: 'sd_fab_$index',
+                                      onPressed: () {
+                                        _close();
+                                        item.onTap();
+                                      },
+                                      backgroundColor: const Color(0xFFD10047),
+                                      foregroundColor: Colors.white,
+                                      child: Icon(item.icon, size: 18),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -182,20 +189,25 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      heroTag: widget.tooltip ?? 'speed_dial_main',
-      onPressed: _toggle,
-      backgroundColor: const Color(0xFFD10047),
-      foregroundColor: Colors.white,
-      tooltip: widget.tooltip,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Transform.rotate(
-            angle: _controller.value * math.pi / 4,
-            child: const Icon(Icons.add),
-          );
-        },
+    final label = widget.tooltip ?? 'Open action menu';
+    return Semantics(
+      label: label,
+      button: true,
+      child: FloatingActionButton(
+        heroTag: widget.tooltip ?? 'speed_dial_main',
+        onPressed: _toggle,
+        backgroundColor: const Color(0xFFD10047),
+        foregroundColor: Colors.white,
+        tooltip: widget.tooltip,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Transform.rotate(
+              angle: _controller.value * math.pi / 4,
+              child: const Icon(Icons.add),
+            );
+          },
+        ),
       ),
     );
   }

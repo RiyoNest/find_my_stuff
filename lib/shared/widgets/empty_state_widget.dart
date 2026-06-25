@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colours.dart';
 import '../../core/constants/app_spacing.dart';
 
 class EmptyStateWidget extends StatelessWidget {
@@ -30,9 +29,16 @@ class EmptyStateWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(RAppSpacing.md + 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF5F8),
+                color: theme.brightness == Brightness.dark
+                    ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
+                    : const Color(0xFFFFF5F8),
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFF8D7E3), width: 1),
+                border: Border.all(
+                  color: theme.brightness == Brightness.dark
+                      ? theme.colorScheme.outline.withValues(alpha: 0.3)
+                      : const Color(0xFFF8D7E3),
+                  width: 1,
+                ),
               ),
               child: Icon(
                 icon,
@@ -46,7 +52,7 @@ class EmptyStateWidget extends StatelessWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: RAppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: RAppSpacing.xs + 2),
@@ -54,7 +60,7 @@ class EmptyStateWidget extends StatelessWidget {
               description,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: RAppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (actionButton != null) ...[

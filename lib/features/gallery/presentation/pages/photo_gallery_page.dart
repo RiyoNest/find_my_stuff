@@ -9,7 +9,7 @@ import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
 import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
 import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
-import 'package:find_my_stuff/core/constants/app_colours.dart';
+import 'package:find_my_stuff/shared/utils/responsive_grid_delegate.dart';
 
 class PhotoGalleryPage extends ConsumerStatefulWidget {
   const PhotoGalleryPage({super.key});
@@ -80,14 +80,15 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
             );
           }
 
+          final cols = ResponsiveLayout.getColumns(context);
           return GridView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: filtered.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cols,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              childAspectRatio: 0.9,
+              childAspectRatio: ResponsiveLayout.getPhotoCardAspectRatio(cols),
             ),
             itemBuilder: (_, index) {
               final item = filtered[index];
@@ -147,7 +148,7 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
                               item.name,
                               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: RAppColors.textPrimary,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -156,7 +157,7 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
                             Text(
                               path.isNotEmpty ? path : 'No location path',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: RAppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

@@ -1,8 +1,5 @@
-// File: lib/shared/widgets/view_options_sheet.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_colours.dart';
 import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 import '../enums/content_view_mode.dart';
@@ -14,10 +11,12 @@ class ViewOptionsSheet extends ConsumerWidget {
   const ViewOptionsSheet({super.key});
 
   static Future<void> show(BuildContext context) {
+    final theme = Theme.of(context);
     return showModalBottomSheet(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(RAppRadius.xl),
@@ -51,56 +50,72 @@ class ViewOptionsSheet extends ConsumerWidget {
                   'Display Options',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: RAppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
               const SizedBox(height: RAppSpacing.md + 4),
 
-              // 1. View mode
+              // 1. View Mode (SegmentedButton)
               Text(
                 'View As',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: RAppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: RAppSpacing.sm),
-              Row(
-                children: [
-                  _ViewModeButton(
-                    icon: Icons.list_rounded,
-                    label: 'List',
-                    selected: prefs.viewMode == ContentViewMode.list,
-                    onTap: () => notifier.setViewMode(ContentViewMode.list),
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<ContentViewMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ContentViewMode.list,
+                      icon: Icon(Icons.list_rounded),
+                      label: Text('List'),
+                    ),
+                    ButtonSegment(
+                      value: ContentViewMode.grid,
+                      icon: Icon(Icons.grid_view_rounded),
+                      label: Text('Grid'),
+                    ),
+                    ButtonSegment(
+                      value: ContentViewMode.tree,
+                      icon: Icon(Icons.account_tree_outlined),
+                      label: Text('Tree'),
+                    ),
+                  ],
+                  selected: {prefs.viewMode},
+                  onSelectionChanged: (selected) {
+                    notifier.setViewMode(selected.first);
+                  },
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return const Color(0xFFD10047);
+                      }
+                      return theme.colorScheme.surfaceContainer;
+                    }),
+                    foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return Colors.white;
+                      }
+                      return theme.colorScheme.onSurface;
+                    }),
                   ),
-                  const SizedBox(width: RAppSpacing.sm),
-                  _ViewModeButton(
-                    icon: Icons.grid_view_rounded,
-                    label: 'Grid',
-                    selected: prefs.viewMode == ContentViewMode.grid,
-                    onTap: () => notifier.setViewMode(ContentViewMode.grid),
-                  ),
-                  const SizedBox(width: RAppSpacing.sm),
-                  _ViewModeButton(
-                    icon: Icons.account_tree_outlined,
-                    label: 'Tree',
-                    selected: prefs.viewMode == ContentViewMode.tree,
-                    onTap: () => notifier.setViewMode(ContentViewMode.tree),
-                  ),
-                ],
+                ),
               ),
 
               const SizedBox(height: RAppSpacing.lg),
               const Divider(),
               const SizedBox(height: RAppSpacing.sm),
 
-              // 2. Sort order
+              // 2. Sort Order
               Text(
                 'Sort By',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: RAppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: RAppSpacing.xs),
@@ -111,7 +126,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                   title: Text(
                     order.label,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: RAppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   contentPadding: EdgeInsets.zero,
@@ -127,12 +142,12 @@ class ViewOptionsSheet extends ConsumerWidget {
               const Divider(),
               const SizedBox(height: RAppSpacing.sm),
 
-              // 3. Filter
+              // 3. Filter Options
               Text(
                 'Display Filter',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: RAppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: RAppSpacing.xs),
@@ -143,7 +158,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                   title: Text(
                     filter.label,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: RAppColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   contentPadding: EdgeInsets.zero,
@@ -159,36 +174,68 @@ class ViewOptionsSheet extends ConsumerWidget {
               const Divider(),
               const SizedBox(height: RAppSpacing.sm),
 
-              // 4. Future placeholders (Coming Soon)
+              // 4. Preferences (Coming Soon Toggles)
               Text(
                 'Preferences (Coming Soon)',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: RAppColors.textSecondary,
+                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: RAppSpacing.xs),
               SwitchListTile(
                 value: false,
                 onChanged: null,
-                title: const Text('Show Archived'),
-                subtitle: const Text('Include archived containers and items'),
+                title: Text(
+                  'Show Archived',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                ),
+                subtitle: Text(
+                  'Include archived containers and items',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               ),
               SwitchListTile(
                 value: false,
                 onChanged: null,
-                title: const Text('Photos Only'),
-                subtitle: const Text('Filter to items with photos only'),
+                title: Text(
+                  'Photos Only',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                ),
+                subtitle: Text(
+                  'Filter to items with photos only',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               ),
               SwitchListTile(
                 value: false,
                 onChanged: null,
-                title: const Text('Expiring Items'),
-                subtitle: const Text('Show items with upcoming expiration dates'),
+                title: Text(
+                  'Expiring Soon',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                ),
+                subtitle: Text(
+                  'Show items with upcoming expiration dates',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                ),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+              SwitchListTile(
+                value: false,
+                onChanged: null,
+                title: Text(
+                  'Recently Added',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                ),
+                subtitle: Text(
+                  'Highlight items created within the last 48 hours',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               ),
@@ -209,68 +256,6 @@ class ViewOptionsSheet extends ConsumerWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ViewModeButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ViewModeButton({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bgColor = selected ? const Color(0xFFD10047) : theme.colorScheme.surface;
-    final foregroundColor = selected ? Colors.white : const Color(0xFF374151);
-    final borderColor = selected ? Colors.transparent : const Color(0xFFF8D7E3);
-
-    return Expanded(
-      child: Material(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(RAppRadius.md),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          hoverColor: const Color(0xFFFCE4EC),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(
-              vertical: RAppSpacing.sm + 2,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(RAppRadius.md),
-              border: Border.all(color: borderColor),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: foregroundColor,
-                ),
-                const SizedBox(height: RAppSpacing.xs),
-                Text(
-                  label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

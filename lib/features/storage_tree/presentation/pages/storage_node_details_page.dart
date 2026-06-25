@@ -17,13 +17,13 @@ import '../../../../shared/enums/content_view_mode.dart';
 import '../../../../shared/enums/content_sort_order.dart';
 import '../../../../shared/enums/content_filter.dart';
 import '../../../../shared/providers/content_preferences_provider.dart';
-import '../../../../shared/widgets/content_toolbar.dart';
 import '../../../../shared/widgets/location_breadcrumb.dart';
 import '../../../../shared/widgets/hierarchy_tree_view.dart';
 import '../../../../shared/widgets/quick_add_sheet.dart';
 import '../../../../shared/widgets/content_page_scaffold.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/speed_dial_fab.dart';
+import '../../../../shared/utils/responsive_grid_delegate.dart';
 import '../../../../shared/providers/room_providers.dart';
 
 class StorageNodeDetailsPage extends ConsumerStatefulWidget {
@@ -203,7 +203,6 @@ class _StorageNodeDetailsPageState
           },
           initialSearchQuery: _searchQuery,
           breadcrumbs: segments,
-          toolbar: const ContentToolbar(),
           floatingActionButton: SpeedDialFAB(
             tooltip: 'Add options',
             items: [
@@ -262,13 +261,14 @@ class _StorageNodeDetailsPageState
               }
 
               if (prefs.viewMode == ContentViewMode.grid) {
+                final cols = ResponsiveLayout.getColumns(context);
                 return GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: cols,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 1.0,
+                    childAspectRatio: ResponsiveLayout.getItemCardAspectRatio(cols),
                   ),
                   itemCount: processed.length,
                   itemBuilder: (context, index) {
@@ -317,7 +317,7 @@ class _StorageNodeDetailsPageState
                                     child.name,
                                     style: theme.textTheme.titleSmall?.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: RAppColors.textPrimary,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -425,7 +425,7 @@ class _ChildNodeCard extends StatelessWidget {
                       node.name,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: RAppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

@@ -9,7 +9,12 @@ import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
 import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
 import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
-import 'package:find_my_stuff/core/constants/app_colours.dart';
+import 'package:find_my_stuff/shared/enums/content_view_mode.dart';
+import 'package:find_my_stuff/shared/enums/content_sort_order.dart';
+import 'package:find_my_stuff/shared/enums/content_filter.dart';
+import 'package:find_my_stuff/shared/providers/content_preferences_provider.dart';
+import 'package:find_my_stuff/shared/utils/responsive_grid_delegate.dart';
+import 'package:find_my_stuff/shared/enums/node_type.dart';
 
 class DashboardItemsPage extends ConsumerStatefulWidget {
   final String type;
@@ -29,8 +34,11 @@ class _DashboardItemsPageState extends ConsumerState<DashboardItemsPage> {
   @override
   Widget build(BuildContext context) {
     final repo = ref.read(storageNodeRepositoryProvider);
+    final prefs = ref.watch(contentPreferencesProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    // Map type to title and provider
+    // Map type to title
     final String title = switch (widget.type) {
       'all' => 'All Items',
       'important' => 'Important Items',
@@ -97,14 +105,65 @@ class _DashboardItemsPageState extends ConsumerState<DashboardItemsPage> {
             }).toList();
           }
 
+          // Apply content preferences filter
+          filtered = filtered.where((node) {
+            return switch (prefs.filter) {
+              ContentFilter.all => true,
+              ContentFilter.itemsOnly => node.nodeType == NodeType.item.name,
+              ContentFilter.containersOnly => node.nodeType == NodeType.container.name,
+              ContentFilter.sectionsOnly => node.nodeType == NodeType.section.name,
+            };
+          }).toList();
+
+          // Apply content preferences sort
+          filtered.sort((a, b) {
+            return switch (prefs.sortOrder) {
+              ContentSortOrder.nameAsc =>
+                a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+              ContentSortOrder.nameDesc =>
+                b.name.toLowerCase().compareTo(a.name.toLowerCase()),
+              ContentSortOrder.newestFirst => b.createdAt.compareTo(a.createdAt),
+              ContentSortOrder.oldestFirst => a.createdAt.compareTo(b.createdAt),
+              ContentSortOrder.recentlyViewed =>
+                (b.viewedAt ?? DateTime(0)).compareTo(a.viewedAt ?? DateTime(0)),
+            };
+          });
+
           if (filtered.isEmpty) {
             return const EmptyStateWidget(
               icon: Icons.search_off_rounded,
               title: 'No search results',
-              description: 'No items in this dashboard match your query.',
+              description: 'No items in this dashboard match your query or filters.',
             );
           }
 
+          // Grid View rendering
+          if (prefs.viewMode == ContentViewMode.grid) {
+            final cols = ResponsiveLayout.getColumns(context);
+            return GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: ResponsiveLayout.getItemCardAspectRatio(cols),
+              ),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final item = filtered[index];
+                final path = repo.buildPath(item);
+
+                return _ResponsiveDashboardItemCard(
+                  item: item,
+                  path: path,
+                  isDark: isDark,
+                  theme: theme,
+                );
+              },
+            );
+          }
+
+          // Default / List View rendering
           return ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: filtered.length,
@@ -118,7 +177,10 @@ class _DashboardItemsPageState extends ConsumerState<DashboardItemsPage> {
                 elevation: 1,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.6),
+                  side: BorderSide(
+                    color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+                    width: 0.6,
+                  ),
                 ),
                 child: ListTile(
                   onTap: () => context.push('/node/${item.uuid}'),
@@ -143,17 +205,17 @@ class _DashboardItemsPageState extends ConsumerState<DashboardItemsPage> {
                       ),
                     ),
                   ),
-                  title: Text(
+                   title: Text(
                     item.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: RAppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                   ),
                   subtitle: Text(
                     path.isNotEmpty ? path : 'No location path',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: RAppColors.textSecondary,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -176,6 +238,126 @@ class _DashboardItemsPageState extends ConsumerState<DashboardItemsPage> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _ResponsiveDashboardItemCard extends StatefulWidget {
+  final StorageNodeEntity item;
+  final String path;
+  final bool isDark;
+  final ThemeData theme;
+
+  const _ResponsiveDashboardItemCard({
+    required this.item,
+    required this.path,
+    required this.isDark,
+    required this.theme,
+  });
+
+  @override
+  State<_ResponsiveDashboardItemCard> createState() => _ResponsiveDashboardItemCardState();
+}
+
+class _ResponsiveDashboardItemCardState extends State<_ResponsiveDashboardItemCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.03 : 1.00,
+        duration: const Duration(milliseconds: 150),
+        child: AnimatedPhysicalModel(
+          duration: const Duration(milliseconds: 150),
+          shape: BoxShape.rectangle,
+          borderRadius: BorderRadius.circular(16),
+          elevation: _isHovered ? 4 : 2,
+          color: widget.theme.cardColor,
+          shadowColor: Colors.black.withOpacity(0.1),
+          child: Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: widget.isDark
+                    ? widget.theme.colorScheme.outline.withOpacity(0.3)
+                    : const Color(0xFFF8D7E3),
+                width: 0.8,
+              ),
+            ),
+            child: InkWell(
+              onTap: () => context.push('/node/${widget.item.uuid}'),
+              hoverColor: const Color(0xFFFFF5F8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: SafeImageWidget(
+                      photoPath: widget.item.photoPath,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: Container(
+                        color: const Color(0xFFFFF5F8),
+                        child: const Center(
+                          child: Icon(
+                            Icons.inventory_2_outlined,
+                            color: Color(0xFFD10047),
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.item.name,
+                                style: widget.theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: widget.theme.colorScheme.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (widget.item.isImportant)
+                              const Icon(
+                                Icons.star_rounded,
+                                color: Colors.amber,
+                                size: 16,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.path.isNotEmpty ? widget.path : 'No location path',
+                          style: widget.theme.textTheme.bodySmall?.copyWith(
+                            color: widget.theme.colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,7 +1,6 @@
 // File: lib/shared/widgets/quick_add_sheet.dart
 
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colours.dart';
 import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/utils/validation_helpers.dart';
@@ -80,6 +79,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final val = widget.validator ?? ValidationHelpers.validateItemName;
     final isValid = val(_controller.text) == null && _controller.text.trim().isNotEmpty;
 
@@ -103,7 +103,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 widget.title,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: RAppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: RAppSpacing.md + 4),
@@ -114,7 +114,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 maxLength: widget.maxLength,
                 cursorColor: const Color(0xFFD10047),
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: RAppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
                 decoration: InputDecoration(
                   hintText: widget.hintText,
@@ -130,18 +130,26 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                         : const Color(0xFFD10047),
                   ),
                   hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey[400],
+                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFFFF5F8),
+                  fillColor: isDark
+                      ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)
+                      : const Color(0xFFFFF5F8),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFF8D7E3), width: 1),
+                    borderSide: BorderSide(
+                      color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+                      width: 1,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFF8D7E3), width: 1),
+                    borderSide: BorderSide(
+                      color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+                      width: 1,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -160,8 +168,12 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFD10047),
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[200],
-                    disabledForegroundColor: Colors.grey[500],
+                    disabledBackgroundColor: isDark
+                        ? theme.colorScheme.onSurface.withOpacity(0.12)
+                        : Colors.grey[200],
+                    disabledForegroundColor: isDark
+                        ? theme.colorScheme.onSurface.withOpacity(0.38)
+                        : Colors.grey[500],
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -203,6 +215,7 @@ class AddChildTypeSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -219,14 +232,14 @@ class AddChildTypeSheet extends StatelessWidget {
               'Add Contents',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: RAppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: RAppSpacing.md),
             _buildTypeOption(
               context,
               icon: Icons.view_agenda_outlined,
-              iconColor: Colors.blue,
+              iconColor: isDark ? theme.colorScheme.primaryContainer : Colors.blue,
               title: 'Section',
               subtitle: 'A logical grouping inside a location — e.g. "Top Shelf", "Left Side"',
               onTap: () => Navigator.pop(context, NodeType.section),
@@ -235,7 +248,7 @@ class AddChildTypeSheet extends StatelessWidget {
             _buildTypeOption(
               context,
               icon: Icons.inventory_2_outlined,
-              iconColor: Colors.amber[700]!,
+              iconColor: isDark ? Colors.amber[300]! : Colors.amber[700]!,
               title: 'Container',
               subtitle: 'A physical container — e.g. "Red Box", "Zip Pouch"',
               onTap: () => Navigator.pop(context, NodeType.container),
@@ -264,17 +277,23 @@ class AddChildTypeSheet extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
+        side: BorderSide(
+          color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+          width: 0.8,
+        ),
       ),
       child: ListTile(
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        hoverColor: const Color(0xFFFFF5F8),
+        hoverColor: isDark
+            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
+            : const Color(0xFFFFF5F8),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -287,13 +306,13 @@ class AddChildTypeSheet extends StatelessWidget {
           title,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: RAppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         subtitle: Text(
           subtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: RAppColors.textSecondary,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),
