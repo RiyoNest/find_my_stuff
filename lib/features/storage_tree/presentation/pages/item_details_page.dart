@@ -14,8 +14,6 @@
 //     EditItemPage and MoveNodePage once those are added to AppRouter.
 //   - Archive dialog improved: destructive FilledButton uses error color.
 
-import 'dart:io';
-
 import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
@@ -23,6 +21,7 @@ import 'package:find_my_stuff/features/storage_tree/presentation/pages/photo_vie
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_path_provider.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
+import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -295,31 +294,30 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                       ),
                       child: Hero(
                         tag: node.photoPath!,
-                        child: File(node.photoPath!).existsSync()
-                            ? Image.file(
-                          File(node.photoPath!),
+                        child: SafeImageWidget(
+                          photoPath: node.photoPath,
                           height: 220,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                        )
-                            : Container(
-                          height: 150,
-                          width: double.infinity,
-                          color: theme.colorScheme.surfaceContainerLow,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.broken_image_outlined,
-                                size: 40,
-                                color: theme.colorScheme.outline,
-                              ),
-                              const SizedBox(height: RAppSpacing.xs),
-                              Text(
-                                'Photo not found',
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                            ],
+                          placeholder: Container(
+                            height: 150,
+                            width: double.infinity,
+                            color: theme.colorScheme.surfaceContainerLow,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 40,
+                                  color: theme.colorScheme.outline,
+                                ),
+                                const SizedBox(height: RAppSpacing.xs),
+                                Text(
+                                  'Photo not found',
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

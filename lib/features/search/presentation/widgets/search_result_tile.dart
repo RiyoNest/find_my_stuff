@@ -8,10 +8,12 @@ import 'package:go_router/go_router.dart';
 class SearchResultTile
     extends ConsumerWidget {
   final StorageNodeEntity item;
+  final VoidCallback? onTap;
 
   const SearchResultTile({
     super.key,
     required this.item,
+    this.onTap,
   });
 
   @override
@@ -49,9 +51,13 @@ class SearchResultTile
         trailing:
         const Icon(Icons.chevron_right),
         onTap: () {
-          context.push(
-            '/node/${item.uuid}',
-          );
+          if (onTap != null) {
+            onTap!();
+          } else {
+            context.push(
+              '/node/${item.uuid}',
+            );
+          }
         },
       ),
     );

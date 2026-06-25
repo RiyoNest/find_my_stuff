@@ -1,0 +1,202 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import '../../core/constants/app_radius.dart';
+
+class SpeedDialItem {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const SpeedDialItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+}
+
+class SpeedDialFAB extends StatefulWidget {
+  final List<SpeedDialItem> items;
+  final IconData mainIcon;
+  final String? tooltip;
+
+  const SpeedDialFAB({
+    super.key,
+    required this.items,
+    this.mainIcon = Icons.add,
+    this.tooltip,
+  });
+
+  @override
+  State<SpeedDialFAB> createState() => _SpeedDialFABState();
+}
+
+class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderStateMixin {
+  bool _isOpen = false;
+  late AnimationController _controller;
+  late Animation<double> _expandAnimation;
+  OverlayEntry? _overlayEntry;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      value: _isOpen ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.fastOutSlowIn,
+    );
+  }
+
+  @override
+  void dispose() {
+    _close();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    if (_isOpen) {
+      _close();
+    } else {
+      _open();
+    }
+  }
+
+  void _open() {
+    setState(() {
+      _isOpen = true;
+    });
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+    _controller.forward();
+  }
+
+  void _close() {
+    if (!_isOpen) return;
+    setState(() {
+      _isOpen = false;
+    });
+    _controller.reverse().then((_) {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    });
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final offset = renderBox.localToGlobal(Offset.zero);
+
+    return OverlayEntry(
+      builder: (context) {
+        return Stack(
+          children: [
+            // Barrier
+            GestureDetector(
+              onTap: _close,
+              child: AnimatedBuilder(
+                animation: _expandAnimation,
+                builder: (context, child) {
+                  return Container(
+                    color: Colors.black.withOpacity(_expandAnimation.value * 0.4),
+                  );
+                },
+              ),
+            ),
+            // Floating options
+            Positioned(
+              right: MediaQuery.of(context).size.width - offset.dx - size.width,
+              bottom: MediaQuery.of(context).size.height - offset.dy,
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    ScaleTransition(
+                      scale: _expandAnimation,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: widget.items.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final item = entry.value;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Option label
+                                Card(
+                                  color: Colors.black87,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(RAppRadius.sm),
+                                  ),
+                                  elevation: 2,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    child: Text(
+                                      item.label,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Option FAB
+                                FloatingActionButton.small(
+                                  heroTag: 'sd_fab_$index',
+                                  onPressed: () {
+                                    _close();
+                                    item.onTap();
+                                  },
+                                  backgroundColor: const Color(0xFFD10047),
+                                  foregroundColor: Colors.white,
+                                  child: Icon(item.icon, size: 18),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: widget.tooltip ?? 'speed_dial_main',
+      onPressed: _toggle,
+      backgroundColor: const Color(0xFFD10047),
+      foregroundColor: Colors.white,
+      tooltip: widget.tooltip,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.rotate(
+            angle: _controller.value * math.pi / 4,
+            child: const Icon(Icons.add),
+          );
+        },
+      ),
+    );
+  }
+}

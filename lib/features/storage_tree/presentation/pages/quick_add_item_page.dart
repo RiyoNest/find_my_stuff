@@ -13,8 +13,6 @@
 //   - Everything else (validation, AppSnackBar, loading state on save
 //     button) is unchanged from the previous version.
 
-import 'dart:io';
-
 import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
@@ -24,6 +22,7 @@ import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/enums/node_type.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
+import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -56,6 +55,8 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   DateTime? _expiryDate;
   String? _photoPath;
   bool _isSaving = false;
+  bool _isSaved = false;
+  final List<String> _tempPhotoPaths = [];
 
   final _picker = ImagePicker();
 
@@ -73,6 +74,11 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
     _nameController.dispose();
     _descriptionController.dispose();
     _tagsController.dispose();
+    if (!_isSaved) {
+      for (final path in _tempPhotoPaths) {
+        PhotoStorageService.deletePhoto(path);
+      }
+    }
     super.dispose();
   }
 
@@ -83,6 +89,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
     );
     if (file == null) return;
     final saved = await PhotoStorageService.savePhoto(file.path);
+    _tempPhotoPaths.add(saved);
     setState(() => _photoPath = saved);
   }
 
@@ -93,6 +100,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
     );
     if (file == null) return;
     final saved = await PhotoStorageService.savePhoto(file.path);
+    _tempPhotoPaths.add(saved);
     setState(() => _photoPath = saved);
   }
 
@@ -146,6 +154,15 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
       );
 
       repo.save(item);
+      _isSaved = true;
+
+      // Delete unused temporary photos from this session
+      for (final path in _tempPhotoPaths) {
+        if (path != _photoPath) {
+          await PhotoStorageService.deletePhoto(path);
+        }
+      }
+
       ref.read(storageRefreshProvider.notifier).state++;
 
       if (mounted) {
@@ -485,14 +502,12 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                   const SizedBox(height: RAppSpacing.sm),
 
                   if (_photoPath != null) ...[
-                    ClipRRect(
+                    SafeImageWidget(
+                      photoPath: _photoPath,
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                       borderRadius: BorderRadius.circular(RAppRadius.md),
-                      child: Image.file(
-                        File(_photoPath!),
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
                     ),
                     const SizedBox(height: RAppSpacing.sm),
                     TextButton.icon(

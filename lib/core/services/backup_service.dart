@@ -11,6 +11,7 @@ import '../../shared/entities/storage_node_entity.dart';
 import '../../shared/repositories/place_repository.dart';
 import '../../shared/repositories/room_repository.dart';
 import '../../shared/repositories/storage_node_repository.dart';
+import 'photo_storage_service.dart';
 
 class BackupService {
   static Future<void> exportBackup() async {
@@ -82,7 +83,7 @@ class BackupService {
       'nodeType': node.nodeType,
       'name': node.name,
       'description': node.description,
-      'photoPath': node.photoPath,
+      'photoPath': PhotoStorageService.tryMigrateToRelative(node.photoPath),
       'tags': node.tags,
       'isImportant': node.isImportant,
       'isArchived': node.isArchived,
@@ -163,7 +164,7 @@ class BackupService {
           nodeType: nodeJson['nodeType'],
           name: nodeJson['name'],
           description: nodeJson['description'],
-          photoPath: nodeJson['photoPath'],
+          photoPath: PhotoStorageService.tryMigrateToRelative(nodeJson['photoPath']),
           tags: nodeJson['tags'],
           isImportant: nodeJson['isImportant'] ?? false,
           isArchived: nodeJson['isArchived'] ?? false,

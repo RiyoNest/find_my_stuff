@@ -37,9 +37,13 @@
 
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
-import 'package:find_my_stuff/features/room/presentation/widgets/add_room_dialog.dart';
+import 'package:find_my_stuff/shared/widgets/quick_add_sheet.dart';
+import 'package:find_my_stuff/shared/widgets/speed_dial_fab.dart';
+import 'package:find_my_stuff/shared/enums/node_type.dart';
+import 'package:find_my_stuff/core/utils/validation_helpers.dart';
 import 'package:find_my_stuff/shared/entities/place_entity.dart';
 import 'package:find_my_stuff/shared/entities/room_entity.dart';
+import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/providers/room_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/repositories/place_repository.dart';
@@ -85,9 +89,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _addRoom() async {
-    final roomName = await showDialog<String>(
-      context: context,
-      builder: (_) => const AddRoomDialog(),
+    final roomName = await QuickAddSheet.show(
+      context,
+      title: 'Add Room',
+      hintText: 'e.g. Living Room, Bedroom',
+      labelText: 'Room Name',
+      maxLength: ValidationHelpers.maxRoomNameLength,
+      validator: ValidationHelpers.validateRoomName,
     );
 
     if (roomName == null || roomName.trim().isEmpty) return;
@@ -116,13 +124,93 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _addItem() => context.push('/quick-add');
 
-  void _openFilteredItems<T>(String title, List<T> items) {
-    context.push('/dashboard-items', extra: {'title': title, 'items': items});
+  Future<void> _addChildFromHome(NodeType type) async {
+    final destinations = await ref.read(quickAddDestinationsProvider.future);
+    if (destinations.isEmpty) {
+      if (mounted) {
+        AppSnackBar.error(context, "Please create a room and location first.");
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final StorageNodeEntity? parent = await showModalBottomSheet<StorageNodeEntity>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(RAppRadius.xl)),
+      ),
+      builder: (context) {
+        final repo = ref.read(storageNodeRepositoryProvider);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Select Parent Location',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: destinations.length,
+                  itemBuilder: (context, index) {
+                    final d = destinations[index];
+                    final path = repo.buildPath(d);
+                    return ListTile(
+                      title: Text(d.name),
+                      subtitle: Text(path),
+                      onTap: () => Navigator.pop(context, d),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (parent == null) return;
+
+    final name = await QuickAddSheet.show(
+      context,
+      title: 'Add ${type == NodeType.section ? "Section" : "Container"}',
+      hintText: type == NodeType.section ? 'e.g. Top Shelf, Left Side' : 'e.g. Box, Zip Pouch',
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    try {
+      final node = StorageNodeEntity(
+        uuid: const Uuid().v4(),
+        roomUuid: parent.roomUuid,
+        parentUuid: parent.uuid,
+        nodeType: type.name,
+        name: name.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final repo = ref.read(storageNodeRepositoryProvider);
+      repo.save(node);
+      ref.read(storageRefreshProvider.notifier).state++;
+
+      if (mounted) {
+        AppSnackBar.success(context, '"$name" added');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add ${type == NodeType.section ? 'section' : 'container'}.");
+      }
+    }
   }
 
-  void _openPhotos<T>(List<T> items) {
-    context.push('/photos', extra: items);
-  }
+
 
   Future<void> _onRefresh() async {
     ref.invalidate(roomListProvider(currentPlace.uuid));
@@ -170,11 +258,30 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       drawer: const AppDrawer(),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'home_fab',
-        onPressed: _addRoom,
-        tooltip: 'Add Room',
-        child: const Icon(Icons.add),
+      floatingActionButton: SpeedDialFAB(
+        tooltip: 'Add Options',
+        items: [
+          SpeedDialItem(
+            icon: Icons.meeting_room_rounded,
+            label: 'Add Room',
+            onTap: _addRoom,
+          ),
+          SpeedDialItem(
+            icon: Icons.view_agenda_outlined,
+            label: 'Add Section',
+            onTap: () => _addChildFromHome(NodeType.section),
+          ),
+          SpeedDialItem(
+            icon: Icons.inventory_2_outlined,
+            label: 'Add Container',
+            onTap: () => _addChildFromHome(NodeType.container),
+          ),
+          SpeedDialItem(
+            icon: Icons.label_outline,
+            label: 'Add Item',
+            onTap: _addItem,
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
@@ -224,9 +331,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                         expiredCount: expired.length,
                         expiringCount: expiring.length,
                         onTapExpired: () =>
-                            _openFilteredItems('Expired Items', expired),
+                            context.push('/dashboard/expired'),
                         onTapExpiring: () =>
-                            _openFilteredItems('Expiring Items', expiring),
+                            context.push('/dashboard/expiring'),
                       ),
                       loading: () => const SizedBox(),
                       error: (_, __) => const SizedBox(),
@@ -288,12 +395,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           title: 'Items',
                                           value: stats['items'].toString(),
                                           icon: Icons.inventory_2,
-                                          onTap: () => _openFilteredItems(
-                                            'All Items',
-                                            ref
-                                                .read(storageNodeRepositoryProvider)
-                                                .getAllItems(),
-                                          ),
+                                          onTap: () => context.push('/dashboard/all'),
                                         ),
                                       ),
                                       const SizedBox(width: RAppSpacing.sm + 4),
@@ -303,12 +405,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           title: 'Important',
                                           value: stats['important'].toString(),
                                           icon: Icons.star,
-                                          onTap: () => _openFilteredItems(
-                                            'Important Items',
-                                            ref
-                                                .read(storageNodeRepositoryProvider)
-                                                .getImportantItems(limit: 999999),
-                                          ),
+                                          onTap: () => context.push('/dashboard/important'),
                                         ),
                                       ),
                                       const SizedBox(width: RAppSpacing.sm + 4),
@@ -318,11 +415,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           title: 'Photos',
                                           value: stats['photos'].toString(),
                                           icon: Icons.photo,
-                                          onTap: () => _openPhotos(
-                                            ref
-                                                .read(storageNodeRepositoryProvider)
-                                                .getItemsWithPhotosList(),
-                                          ),
+                                          onTap: () => context.push('/photos'),
                                         ),
                                       ),
                                       const SizedBox(width: RAppSpacing.sm + 4),

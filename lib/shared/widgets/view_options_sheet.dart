@@ -1,150 +1,215 @@
 // File: lib/shared/widgets/view_options_sheet.dart
-//
-// Bottom sheet shown when the user taps the expand arrow in ContentToolbar.
-// Lets the user pick view mode (List / Grid / Tree) and sort order.
-// Uses showModalBottomSheet so it overlays without changing the page.
 
-import 'package:find_my_stuff/core/constants/app_colours.dart';
-import 'package:find_my_stuff/core/constants/app_radius.dart';
-import 'package:find_my_stuff/core/constants/app_spacing.dart';
-import 'package:find_my_stuff/shared/enums/view_sort_enums.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/constants/app_colours.dart';
+import '../../core/constants/app_radius.dart';
+import '../../core/constants/app_spacing.dart';
+import '../enums/content_view_mode.dart';
+import '../enums/content_sort_order.dart';
+import '../enums/content_filter.dart';
+import '../providers/content_preferences_provider.dart';
 
-class ViewOptionsSheet extends StatefulWidget {
-  final ContentViewMode currentViewMode;
-  final ContentSortOrder currentSortOrder;
-  final ValueChanged<ContentViewMode> onViewModeChanged;
-  final ValueChanged<ContentSortOrder> onSortOrderChanged;
+class ViewOptionsSheet extends ConsumerWidget {
+  const ViewOptionsSheet({super.key});
 
-  const ViewOptionsSheet({
-    super.key,
-    required this.currentViewMode,
-    required this.currentSortOrder,
-    required this.onViewModeChanged,
-    required this.onSortOrderChanged,
-  });
-
-  static Future<void> show(
-      BuildContext context, {
-        required ContentViewMode currentViewMode,
-        required ContentSortOrder currentSortOrder,
-        required ValueChanged<ContentViewMode> onViewModeChanged,
-        required ValueChanged<ContentSortOrder> onSortOrderChanged,
-      }) {
+  static Future<void> show(BuildContext context) {
     return showModalBottomSheet(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(RAppRadius.xl),
         ),
       ),
-      builder: (_) => ViewOptionsSheet(
-        currentViewMode: currentViewMode,
-        currentSortOrder: currentSortOrder,
-        onViewModeChanged: onViewModeChanged,
-        onSortOrderChanged: onSortOrderChanged,
-      ),
+      builder: (_) => const ViewOptionsSheet(),
     );
   }
 
   @override
-  State<ViewOptionsSheet> createState() => _ViewOptionsSheetState();
-}
-
-class _ViewOptionsSheetState extends State<ViewOptionsSheet> {
-  late ContentViewMode _viewMode;
-  late ContentSortOrder _sortOrder;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewMode = widget.currentViewMode;
-    _sortOrder = widget.currentSortOrder;
-  }
-
-  void _setViewMode(ContentViewMode mode) {
-    setState(() => _viewMode = mode);
-    widget.onViewModeChanged(mode);
-  }
-
-  void _setSortOrder(ContentSortOrder order) {
-    setState(() => _sortOrder = order);
-    widget.onSortOrderChanged(order);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final prefs = ref.watch(contentPreferencesProvider);
+    final notifier = ref.read(contentPreferencesProvider.notifier);
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          RAppSpacing.lg,
-          0,
-          RAppSpacing.lg,
-          RAppSpacing.lg,
+        padding: EdgeInsets.only(
+          left: RAppSpacing.lg,
+          right: RAppSpacing.lg,
+          bottom: RAppSpacing.lg + MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // View mode
-            Text('View As', style: theme.textTheme.titleSmall),
-            const SizedBox(height: RAppSpacing.sm),
-            Row(
-              children: [
-                _ViewModeButton(
-                  icon: Icons.list_rounded,
-                  label: 'List',
-                  selected: _viewMode == ContentViewMode.list,
-                  onTap: () => _setViewMode(ContentViewMode.list),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              Center(
+                child: Text(
+                  'Display Options',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: RAppColors.textPrimary,
+                  ),
                 ),
-                const SizedBox(width: RAppSpacing.sm),
-                _ViewModeButton(
-                  icon: Icons.grid_view_rounded,
-                  label: 'Grid',
-                  selected: _viewMode == ContentViewMode.grid,
-                  onTap: () => _setViewMode(ContentViewMode.grid),
-                ),
-                const SizedBox(width: RAppSpacing.sm),
-                _ViewModeButton(
-                  icon: Icons.account_tree_outlined,
-                  label: 'Tree',
-                  selected: _viewMode == ContentViewMode.tree,
-                  onTap: () => _setViewMode(ContentViewMode.tree),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: RAppSpacing.md + 4),
 
-            const SizedBox(height: RAppSpacing.lg),
-
-            // Sort order
-            Text('Sort By', style: theme.textTheme.titleSmall),
-            const SizedBox(height: RAppSpacing.sm),
-            ...ContentSortOrder.values.map(
-                  (order) => RadioListTile<ContentSortOrder>(
-                value: order,
-                groupValue: _sortOrder,
-                title: Text(
-                  order.label,
-                  style: theme.textTheme.bodyMedium,
+              // 1. View mode
+              Text(
+                'View As',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: RAppColors.textPrimary,
                 ),
+              ),
+              const SizedBox(height: RAppSpacing.sm),
+              Row(
+                children: [
+                  _ViewModeButton(
+                    icon: Icons.list_rounded,
+                    label: 'List',
+                    selected: prefs.viewMode == ContentViewMode.list,
+                    onTap: () => notifier.setViewMode(ContentViewMode.list),
+                  ),
+                  const SizedBox(width: RAppSpacing.sm),
+                  _ViewModeButton(
+                    icon: Icons.grid_view_rounded,
+                    label: 'Grid',
+                    selected: prefs.viewMode == ContentViewMode.grid,
+                    onTap: () => notifier.setViewMode(ContentViewMode.grid),
+                  ),
+                  const SizedBox(width: RAppSpacing.sm),
+                  _ViewModeButton(
+                    icon: Icons.account_tree_outlined,
+                    label: 'Tree',
+                    selected: prefs.viewMode == ContentViewMode.tree,
+                    onTap: () => notifier.setViewMode(ContentViewMode.tree),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: RAppSpacing.lg),
+              const Divider(),
+              const SizedBox(height: RAppSpacing.sm),
+
+              // 2. Sort order
+              Text(
+                'Sort By',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: RAppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: RAppSpacing.xs),
+              ...ContentSortOrder.values.map(
+                (order) => RadioListTile<ContentSortOrder>(
+                  value: order,
+                  groupValue: prefs.sortOrder,
+                  title: Text(
+                    order.label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: RAppColors.textPrimary,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  activeColor: const Color(0xFFD10047),
+                  onChanged: (v) {
+                    if (v != null) notifier.setSortOrder(v);
+                  },
+                ),
+              ),
+
+              const SizedBox(height: RAppSpacing.md),
+              const Divider(),
+              const SizedBox(height: RAppSpacing.sm),
+
+              // 3. Filter
+              Text(
+                'Display Filter',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: RAppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: RAppSpacing.xs),
+              ...ContentFilter.values.map(
+                (filter) => RadioListTile<ContentFilter>(
+                  value: filter,
+                  groupValue: prefs.filter,
+                  title: Text(
+                    filter.label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: RAppColors.textPrimary,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  activeColor: const Color(0xFFD10047),
+                  onChanged: (v) {
+                    if (v != null) notifier.setFilter(v);
+                  },
+                ),
+              ),
+
+              const SizedBox(height: RAppSpacing.md),
+              const Divider(),
+              const SizedBox(height: RAppSpacing.sm),
+
+              // 4. Future placeholders (Coming Soon)
+              Text(
+                'Preferences (Coming Soon)',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: RAppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: RAppSpacing.xs),
+              SwitchListTile(
+                value: false,
+                onChanged: null,
+                title: const Text('Show Archived'),
+                subtitle: const Text('Include archived containers and items'),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                onChanged: (v) => _setSortOrder(v!),
               ),
-            ),
+              SwitchListTile(
+                value: false,
+                onChanged: null,
+                title: const Text('Photos Only'),
+                subtitle: const Text('Filter to items with photos only'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+              SwitchListTile(
+                value: false,
+                onChanged: null,
+                title: const Text('Expiring Items'),
+                subtitle: const Text('Show items with upcoming expiration dates'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
 
-            const SizedBox(height: RAppSpacing.sm),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Done'),
+              const SizedBox(height: RAppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD10047),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Done'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -167,47 +232,45 @@ class _ViewModeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bgColor = selected ? const Color(0xFFD10047) : theme.colorScheme.surface;
+    final foregroundColor = selected ? Colors.white : const Color(0xFF374151);
+    final borderColor = selected ? Colors.transparent : const Color(0xFFF8D7E3);
 
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
+      child: Material(
+        color: bgColor,
         borderRadius: BorderRadius.circular(RAppRadius.md),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            vertical: RAppSpacing.sm + 2,
-          ),
-          decoration: BoxDecoration(
-            color: selected
-                ? theme.colorScheme.primaryContainer
-                : theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(RAppRadius.md),
-            border: selected
-                ? Border.all(color: theme.colorScheme.primary, width: 1.5)
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: selected
-                    ? theme.colorScheme.primary
-                    : RAppColors.textSecondary,
-              ),
-              const SizedBox(height: RAppSpacing.xs),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: selected
-                      ? theme.colorScheme.primary
-                      : RAppColors.textSecondary,
-                  fontWeight:
-                  selected ? FontWeight.w600 : FontWeight.normal,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          hoverColor: const Color(0xFFFCE4EC),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(
+              vertical: RAppSpacing.sm + 2,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(RAppRadius.md),
+              border: Border.all(color: borderColor),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: foregroundColor,
                 ),
-              ),
-            ],
+                const SizedBox(height: RAppSpacing.xs),
+                Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: foregroundColor,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

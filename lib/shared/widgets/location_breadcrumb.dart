@@ -1,32 +1,18 @@
 // File: lib/shared/widgets/location_breadcrumb.dart
-//
-// Horizontally-scrollable breadcrumb showing the path from Home down
-// to the current page. Each segment is tappable and navigates to that
-// level. Used in ContentToolbar on every list page.
-//
-// Usage:
-//   LocationBreadcrumb(
-//     segments: [
-//       BreadcrumbSegment(label: 'Home', onTap: () => context.go('/')),
-//       BreadcrumbSegment(label: 'Kitchen', onTap: () => context.pop()),
-//       BreadcrumbSegment(label: 'Cupboard'),  // current — no tap
-//     ],
-//   )
 
-import 'package:find_my_stuff/core/constants/app_colours.dart';
-import 'package:find_my_stuff/core/constants/app_radius.dart';
-import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 
 class BreadcrumbSegment {
   final String label;
   final VoidCallback? onTap; // null = current page (not tappable)
   final bool isHome;
+  final IconData? icon;
 
   const BreadcrumbSegment({
     required this.label,
     this.onTap,
     this.isHome = false,
+    this.icon,
   });
 }
 
@@ -38,32 +24,43 @@ class LocationBreadcrumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isCurrent = (int i) => i == segments.length - 1;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < segments.length; i++) ...[
-            if (i > 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: RAppSpacing.xs,
-                ),
-                child: Icon(
-                  Icons.chevron_right_rounded,
-                  size: 16,
-                  color: RAppColors.textSecondary,
-                ),
-              ),
-            _BreadcrumbChip(
-              segment: segments[i],
-              isCurrent: isCurrent(i),
-              theme: theme,
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
         ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < segments.length; i++) ...[
+              if (i > 0)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+              _BreadcrumbChip(
+                segment: segments[i],
+                isCurrent: i == segments.length - 1,
+                theme: theme,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -84,43 +81,66 @@ class _BreadcrumbChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final canTap = !isCurrent && segment.onTap != null;
 
-    final child = Row(
+    final Color bgColor = isCurrent ? const Color(0xFFD10047) : const Color(0xFFFFF5F8);
+    final Color textColor = isCurrent ? Colors.white : const Color(0xFF374151);
+    final Color borderColor = isCurrent ? Colors.transparent : const Color(0xFFF8D7E3);
+
+    // Dynamic icon resolution
+    IconData? icon = segment.icon;
+    if (icon == null && segment.isHome) {
+      icon = Icons.home_rounded;
+    }
+
+    final rowContent = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (segment.isHome)
-          Padding(
-            padding: const EdgeInsets.only(right: RAppSpacing.xs),
-            child: Icon(
-              Icons.home_rounded,
-              size: 14,
-              color: isCurrent
-                  ? theme.colorScheme.primary
-                  : RAppColors.textSecondary,
-            ),
+        if (icon != null) ...[
+          Icon(
+            icon,
+            size: 14,
+            color: textColor,
           ),
+          const SizedBox(width: 4),
+        ],
         Text(
           segment.label,
           style: theme.textTheme.labelMedium?.copyWith(
-            color: isCurrent
-                ? theme.colorScheme.primary
-                : RAppColors.textSecondary,
-            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+            color: textColor,
+            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ],
     );
 
-    if (!canTap) return child;
-
-    return InkWell(
-      onTap: segment.onTap,
-      borderRadius: BorderRadius.circular(RAppRadius.sm),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: RAppSpacing.xs,
-          vertical: 2,
+    if (!canTap) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
         ),
-        child: child,
+        child: rowContent,
+      );
+    }
+
+    return Material(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: segment.onTap,
+        mouseCursor: SystemMouseCursors.click,
+        splashColor: const Color(0xFFD10047).withOpacity(0.12),
+        hoverColor: const Color(0xFFFCE4EC),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: rowContent,
+        ),
       ),
     );
   }

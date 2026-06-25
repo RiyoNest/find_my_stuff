@@ -52,15 +52,19 @@ class RAppTheme {
 
   static TextTheme _textTheme(ColorScheme colorScheme) {
     return TextTheme(
-      displayLarge: RAppTextStyles.titleLarge.copyWith(
+      displayLarge: RAppTextStyles.displayLarge.copyWith(
         color: colorScheme.onSurface,
       ),
 
-      headlineMedium: RAppTextStyles.titleMedium.copyWith(
+      headlineMedium: RAppTextStyles.titleLarge.copyWith(
         color: colorScheme.onSurface,
       ),
 
-      titleLarge: RAppTextStyles.titleSmall.copyWith(
+      titleLarge: RAppTextStyles.titleMedium.copyWith(
+        color: colorScheme.onSurface,
+      ),
+
+      titleMedium: RAppTextStyles.titleSmall.copyWith(
         color: colorScheme.onSurface,
       ),
 
