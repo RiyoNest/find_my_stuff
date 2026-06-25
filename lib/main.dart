@@ -1,3 +1,9 @@
+// File: lib/main.dart
+//
+// CHANGE from your version: FindMyStuffApp is now a ConsumerWidget that
+// watches themeModeProvider, so the theme selection in AppDrawer actually
+// changes the live app instead of being local-only state.
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +16,7 @@ import 'core/services/app_review_service.dart';
 import 'core/services/app_update_service.dart';
 import 'core/services/crashlytics_service.dart';
 import 'firebase_options.dart';
+import 'shared/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,15 +31,17 @@ void main() async {
   runApp(const ProviderScope(child: FindMyStuffApp()));
 }
 
-class FindMyStuffApp extends StatelessWidget {
+class FindMyStuffApp extends ConsumerWidget {
   const FindMyStuffApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'FindMyStuff',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
 
       theme: RAppTheme.lightTheme,
       darkTheme: RAppTheme.darkTheme,

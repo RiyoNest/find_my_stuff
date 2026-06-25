@@ -1,3 +1,12 @@
+// File: lib/features/room/presentation/widgets/add_room_dialog.dart
+//
+// CHANGE from your version: added real validation (via ValidationHelpers)
+// instead of just checking for empty string, with inline error text and
+// a live character counter. Save button is disabled while the field is
+// invalid instead of silently no-op'ing on submit.
+
+import 'package:find_my_stuff/core/constants/app_radius.dart';
+import 'package:find_my_stuff/core/utils/validation_helpers.dart';
 import 'package:flutter/material.dart';
 
 class AddRoomDialog extends StatefulWidget {
@@ -8,7 +17,9 @@ class AddRoomDialog extends StatefulWidget {
 }
 
 class _AddRoomDialogState extends State<AddRoomDialog> {
+  final _formKey = GlobalKey<FormState>();
   final _controller = TextEditingController();
+  String? _errorText;
 
   @override
   void dispose() {
@@ -16,32 +27,46 @@ class _AddRoomDialogState extends State<AddRoomDialog> {
     super.dispose();
   }
 
+  void _onChanged(String value) {
+    setState(() {
+      _errorText = ValidationHelpers.validateRoomName(value);
+    });
+  }
+
   void _save() {
-    final roomName = _controller.text.trim();
+    final error = ValidationHelpers.validateRoomName(_controller.text);
 
-    if (roomName.isEmpty) {
-      return;
-    }
+    setState(() => _errorText = error);
 
-    Navigator.pop(
-      context,
-      roomName,
-    );
+    if (error != null) return;
+
+    Navigator.pop(context, ValidationHelpers.sanitize(_controller.text));
   }
 
   @override
   Widget build(BuildContext context) {
+    final isValid = ValidationHelpers.validateRoomName(_controller.text) == null;
+
     return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(RAppRadius.lg),
+      ),
       title: const Text('Add Room'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        textCapitalization: TextCapitalization.words,
-        decoration: const InputDecoration(
-          hintText: 'Bedroom',
-          border: OutlineInputBorder(),
+      content: Form(
+        key: _formKey,
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          maxLength: ValidationHelpers.maxRoomNameLength,
+          decoration: InputDecoration(
+            hintText: 'Bedroom',
+            border: const OutlineInputBorder(),
+            errorText: _errorText,
+          ),
+          onChanged: _onChanged,
+          onSubmitted: (_) => _save(),
         ),
-        onSubmitted: (_) => _save(),
       ),
       actions: [
         TextButton(
@@ -49,7 +74,7 @@ class _AddRoomDialogState extends State<AddRoomDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _save,
+          onPressed: isValid ? _save : null,
           child: const Text('Save'),
         ),
       ],
