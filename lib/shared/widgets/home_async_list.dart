@@ -1,13 +1,11 @@
 // File: lib/shared/widgets/home_async_list.dart
 //
-// CHANGES: Empty state now uses a large emoji inside a soft gradient
-// circle instead of a flat grey icon — matches the "colored images"
-// direction. Emoji map: history→🕐, star_outline→⭐,
-// visibility_off_outlined→🫣, inbox_outlined→📭.
+// Generic wrapper around AsyncValue<List<T>> that gives every dashboard
+// section consistent loading, error+retry, and empty states. Replaces
+// six near-identical `.when(...)` blocks that previously lived inline
+// in home_page.dart (and silently swallowed errors with `SizedBox()`).
 
 import 'package:find_my_stuff/core/constants/app_colours.dart';
-import 'package:find_my_stuff/core/constants/app_gradients.dart';
-import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +14,7 @@ class HomeAsyncList<T> extends StatelessWidget {
   final AsyncValue<List<T>> asyncValue;
   final Widget Function(BuildContext context, T item, int index) itemBuilder;
   final String emptyMessage;
-  final String emptyEmoji;
+  final IconData emptyIcon;
   final VoidCallback onRetry;
   final int maxItems;
 
@@ -26,7 +24,7 @@ class HomeAsyncList<T> extends StatelessWidget {
     required this.itemBuilder,
     required this.emptyMessage,
     required this.onRetry,
-    this.emptyEmoji = '📭',
+    this.emptyIcon = Icons.inbox_outlined,
     this.maxItems = 5,
   });
 
@@ -63,23 +61,14 @@ class HomeAsyncList<T> extends StatelessWidget {
       data: (items) {
         if (items.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: RAppSpacing.lg),
+            padding: const EdgeInsets.symmetric(vertical: RAppSpacing.md + 4),
             child: Center(
               child: Column(
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: RAppGradients.emptyStateBg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        emptyEmoji,
-                        style: const TextStyle(fontSize: 30),
-                      ),
-                    ),
+                  Icon(
+                    emptyIcon,
+                    color: RAppColors.textSecondary,
+                    size: 28,
                   ),
                   const SizedBox(height: RAppSpacing.sm),
                   Text(

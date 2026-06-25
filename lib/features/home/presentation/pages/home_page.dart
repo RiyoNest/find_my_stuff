@@ -35,7 +35,6 @@
 // NOTE: Place-switching UI is intentionally omitted — you said you're
 // holding that feature for the next version.
 
-import 'package:find_my_stuff/core/constants/app_gradients.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:find_my_stuff/features/room/presentation/widgets/add_room_dialog.dart';
@@ -45,6 +44,7 @@ import 'package:find_my_stuff/shared/providers/room_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/repositories/place_repository.dart';
 import 'package:find_my_stuff/shared/widgets/animation_helpers.dart';
+import 'package:find_my_stuff/shared/widgets/app_drawer.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/widgets/dashboard_charts.dart';
 import 'package:find_my_stuff/shared/widgets/dashboard_stat_card.dart';
@@ -57,7 +57,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../widgets/app_drawer.dart';
 
 enum _ActivityFilter { recent, important, forgotten }
 
@@ -289,7 +288,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           title: 'Items',
                                           value: stats['items'].toString(),
                                           icon: Icons.inventory_2,
-                                          gradient: RAppGradients.items,
                                           onTap: () => _openFilteredItems(
                                             'All Items',
                                             ref
@@ -305,7 +303,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           title: 'Important',
                                           value: stats['important'].toString(),
                                           icon: Icons.star,
-                                          gradient: RAppGradients.important,
                                           onTap: () => _openFilteredItems(
                                             'Important Items',
                                             ref
@@ -321,7 +318,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           title: 'Photos',
                                           value: stats['photos'].toString(),
                                           icon: Icons.photo,
-                                          gradient: RAppGradients.photos,
                                           onTap: () => _openPhotos(
                                             ref
                                                 .read(storageNodeRepositoryProvider)
@@ -336,7 +332,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           title: 'Archived',
                                           value: archivedCount.toString(),
                                           icon: Icons.archive_outlined,
-                                          gradient: RAppGradients.archived,
                                           onTap: () =>
                                               context.push('/archived'),
                                         ),
@@ -375,7 +370,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       duration: const Duration(milliseconds: 300),
                                       child: RoomCard(
                                         room: rooms[index],
-                                        index: index,
                                         onTap: () =>
                                             context.push('/room/${rooms[index].uuid}'),
                                       ),
@@ -466,7 +460,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             HomeAsyncList(
                               asyncValue: recentAsync,
                               emptyMessage: 'No recently viewed items',
-                              emptyEmoji: '🕐',
+                              emptyIcon: Icons.history,
                               onRetry: () =>
                                   ref.invalidate(recentlyViewedProvider),
                               itemBuilder: (_, item, index) => SlideInFromLeft(
@@ -478,7 +472,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             HomeAsyncList(
                               asyncValue: importantAsync,
                               emptyMessage: 'No important items yet',
-                              emptyEmoji: '⭐',
+                              emptyIcon: Icons.star_outline,
                               onRetry: () =>
                                   ref.invalidate(importantItemsProvider),
                               itemBuilder: (_, item, index) => SlideInFromLeft(
@@ -490,7 +484,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             HomeAsyncList(
                               asyncValue: forgottenAsync,
                               emptyMessage: 'Nothing forgotten - nice!',
-                              emptyEmoji: '🫣',
+                              emptyIcon: Icons.visibility_off_outlined,
                               onRetry: () =>
                                   ref.invalidate(forgottenItemsProvider),
                               itemBuilder: (_, item, index) => SlideInFromLeft(
@@ -527,37 +521,18 @@ class _AddRoomCard extends StatelessWidget {
         width: 104,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(RAppRadius.lg),
-          border: Border.all(
-            color: theme.colorScheme.primary.withOpacity(0.4),
-            width: 1.5,
-          ),
-          gradient: LinearGradient(
-            colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
-              theme.colorScheme.primary.withOpacity(0.10),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(RAppSpacing.sm),
-                decoration: BoxDecoration(
-                  gradient: RAppGradients.items,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-              ),
+              Icon(Icons.add_rounded, color: theme.colorScheme.primary),
               const SizedBox(height: RAppSpacing.xs + 2),
               Text(
                 'Add Room',
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -582,20 +557,10 @@ class _EmptyHomeState extends StatelessWidget {
         child: Center(
           child: Column(
             children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  gradient: RAppGradients.emptyStateBg,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0x22B11226),
-                    width: 1.5,
-                  ),
-                ),
-                child: const Center(
-                  child: Text('🏠', style: TextStyle(fontSize: 40)),
-                ),
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 56,
+                color: theme.colorScheme.outline,
               ),
               const SizedBox(height: RAppSpacing.md),
               Text('Nothing organized yet', style: theme.textTheme.titleMedium),

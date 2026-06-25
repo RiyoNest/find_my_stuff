@@ -1,13 +1,13 @@
 // File: lib/shared/widgets/app_drawer.dart
 //
 // CHANGES in this version:
-//   - About dialog: app identity block (logo + name + version from
-//     AppInfoService), _AboutInfoRow rows for Developer / Contact /
-//     Version using the emoji-icon pattern, feature list with real icons.
-//   - Contact dialog: tappable _ContactCard tiles with clipboard copy.
-//   - Bug report: structured guidance dialog instead of a SnackBar no-op.
-//   - FAQ: header icon + arrow chevron animation on expand.
-//   - v1.0.0 hardcode in header replaced with AppInfoService.fullVersion.
+//   - All four dialogs (About, Contact, Bug Report, FAQ) converted to
+//     bottom sheets (showModalBottomSheet with DraggableScrollableSheet)
+//     so they feel native on mobile instead of popping up as overlays.
+//   - About: app identity + _AboutInfoRow emoji rows + features.
+//   - Contact + Bug Report: _ContactCard tiles with clipboard copy.
+//   - FAQ: animated accordion items inside a draggable sheet.
+//   - Drawer header version from AppInfoService.fullVersion.
 
 import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
@@ -112,14 +112,21 @@ class AppDrawer extends ConsumerWidget {
   // ── About ──────────────────────────────────────────────────────────────
   void _showAboutDialog(BuildContext context) {
     Navigator.pop(context);
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(RAppSpacing.lg),
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(RAppRadius.xl)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (_, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(RAppSpacing.lg, 0, RAppSpacing.lg, RAppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -208,6 +215,7 @@ class AppDrawer extends ConsumerWidget {
                   child: const Text('Close'),
                 ),
               ),
+              const SizedBox(height: RAppSpacing.md),
             ],
           ),
         ),
@@ -218,43 +226,43 @@ class AppDrawer extends ConsumerWidget {
   // ── Contact ────────────────────────────────────────────────────────────
   void _showContactDialog(BuildContext context) {
     Navigator.pop(context);
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
-        ),
-        title: const Text('Contact Developer'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Have feedback, ideas, or found a problem? Get in touch.',
-              style: Theme.of(ctx).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: RAppSpacing.md),
-            _ContactCard(
-              icon: Icons.person_outline_rounded,
-              label: 'Developer',
-              value: 'Ruban',
-            ),
-            const SizedBox(height: RAppSpacing.sm),
-            _ContactCard(
-              icon: Icons.email_outlined,
-              label: 'Email',
-              value: 'riyooruban@gmail.com',
-              copyable: true,
-              snackContext: ctx,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(RAppRadius.xl)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(RAppSpacing.lg, 0, RAppSpacing.lg, RAppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Contact Developer', style: Theme.of(ctx).textTheme.titleMedium),
+              const SizedBox(height: RAppSpacing.xs),
+              Text(
+                'Have feedback, ideas, or found a problem? Get in touch.',
+                style: Theme.of(ctx).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: RAppSpacing.md),
+              _ContactCard(
+                icon: Icons.person_outline_rounded,
+                label: 'Developer',
+                value: 'Ruban',
+              ),
+              const SizedBox(height: RAppSpacing.sm),
+              _ContactCard(
+                icon: Icons.email_outlined,
+                label: 'Email',
+                value: 'riyooruban@gmail.com',
+                copyable: true,
+                snackContext: ctx,
+              ),
+              const SizedBox(height: RAppSpacing.md),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -262,51 +270,47 @@ class AppDrawer extends ConsumerWidget {
   // ── Bug Report ─────────────────────────────────────────────────────────
   void _showBugReportDialog(BuildContext context) {
     Navigator.pop(context);
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.bug_report_outlined,
-              color: Theme.of(ctx).colorScheme.primary,
-              size: 20,
-            ),
-            const SizedBox(width: RAppSpacing.sm),
-            const Text('Report a Bug'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Found something that looks wrong? Send an email with:',
-              style: Theme.of(ctx).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: RAppSpacing.md),
-            _BulletPoint('What you were trying to do'),
-            _BulletPoint('What happened instead'),
-            _BulletPoint('Your device model (optional)'),
-            const SizedBox(height: RAppSpacing.md),
-            _ContactCard(
-              icon: Icons.email_outlined,
-              label: 'Send to',
-              value: 'riyooruban@gmail.com',
-              copyable: true,
-              snackContext: ctx,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(RAppRadius.xl)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(RAppSpacing.lg, 0, RAppSpacing.lg, RAppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.bug_report_outlined, color: Theme.of(ctx).colorScheme.primary, size: 20),
+                  const SizedBox(width: RAppSpacing.sm),
+                  Text('Report a Bug', style: Theme.of(ctx).textTheme.titleMedium),
+                ],
+              ),
+              const SizedBox(height: RAppSpacing.sm),
+              Text(
+                'Found something wrong? Send an email with:',
+                style: Theme.of(ctx).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: RAppSpacing.sm),
+              _BulletPoint('What you were trying to do'),
+              _BulletPoint('What happened instead'),
+              _BulletPoint('Your device model (optional)'),
+              const SizedBox(height: RAppSpacing.md),
+              _ContactCard(
+                icon: Icons.email_outlined,
+                label: 'Send to',
+                value: 'riyooruban@gmail.com',
+                copyable: true,
+                snackContext: ctx,
+              ),
+              const SizedBox(height: RAppSpacing.md),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -314,19 +318,25 @@ class AppDrawer extends ConsumerWidget {
   // ── FAQ ────────────────────────────────────────────────────────────────
   void _showFaqDialog(BuildContext context) {
     Navigator.pop(context);
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(RAppSpacing.lg),
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(RAppRadius.xl)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        minChildSize: 0.4,
+        builder: (_, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(RAppSpacing.lg, 0, RAppSpacing.lg, RAppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 children: [
                   Container(
@@ -386,6 +396,7 @@ class AppDrawer extends ConsumerWidget {
                   child: const Text('Got it'),
                 ),
               ),
+              const SizedBox(height: RAppSpacing.md),
             ],
           ),
         ),

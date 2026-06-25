@@ -14,7 +14,8 @@ class RAppColors {
   RAppColors._();
 
   // Brand
-  static const primary = Color(0xFFB11226);
+  static const primary = Color(0xFFD10047);
+  // static const primary = Color(0xFFB11226);
   static const secondary = Color(0xFF374151);
   static const background = Color(0xFFF8F9FA);
   static const accent = Color(0xFFFFB703);

@@ -4,12 +4,13 @@ class RAppTextStyles {
   RAppTextStyles._();
 
   static const titleLarge = TextStyle(
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: FontWeight.w700,
+    letterSpacing: -0.5,
   );
 
   static const titleMedium = TextStyle(
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: FontWeight.w600,
   );
 
@@ -21,15 +22,27 @@ class RAppTextStyles {
   static const bodyLarge = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
+    height: 1.5,
   );
 
   static const bodyMedium = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
+    height: 1.4,
+  );
+
+  static const labelLarge = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
   );
 
   static const labelMedium = TextStyle(
     fontSize: 12,
+    fontWeight: FontWeight.w500,
+  );
+
+  static const labelSmall = TextStyle(
+    fontSize: 11,
     fontWeight: FontWeight.w500,
   );
 }
