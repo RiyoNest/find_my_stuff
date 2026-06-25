@@ -12,6 +12,7 @@ import 'core/constants/app_theme.dart';
 import 'core/database/database_seed.dart';
 import 'core/database/objectbox_service.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/app_info_service.dart';
 import 'core/services/crashlytics_service.dart';
 import 'firebase_options.dart';
 import 'shared/providers/theme_provider.dart';
@@ -34,6 +35,8 @@ void main() async {
   await DatabaseSeed.seed();
 
   final prefs = await SharedPreferences.getInstance();
+
+  await AppInfoService.init();
 
   runApp(
     ProviderScope(

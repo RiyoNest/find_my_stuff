@@ -474,7 +474,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  '${rooms.length} Rooms',
+                                  '${rooms.length} Room(s)',
                                   style: theme.textTheme.labelMedium?.copyWith(
                                     color: theme.colorScheme.onPrimaryContainer,
                                     fontWeight: FontWeight.bold,
