@@ -1,11 +1,35 @@
 import 'package:find_my_stuff/core/database/objectbox_service.dart';
 import 'package:find_my_stuff/objectbox.g.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
+import 'package:path/path.dart' as p;
+import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 
 import '../enums/node_type.dart';
 
 class StorageNodeRepository {
   final box = ObjectBoxService.store.box<StorageNodeEntity>();
+
+  StorageNodeEntity? _migrateNode(StorageNodeEntity? node) {
+    if (node == null) return null;
+    final photo = node.photoPath;
+    if (photo != null && photo.isNotEmpty) {
+      if (p.isAbsolute(photo)) {
+        final relative = PhotoStorageService.tryMigrateToRelative(photo);
+        if (relative != null && relative != photo) {
+          node.photoPath = relative;
+          box.put(node);
+        }
+      }
+    }
+    return node;
+  }
+
+  List<StorageNodeEntity> _migrateNodes(List<StorageNodeEntity> list) {
+    for (final node in list) {
+      _migrateNode(node);
+    }
+    return list;
+  }
 
   List<StorageNodeEntity> getStorageLocations(String roomUuid) {
     final query = box
@@ -20,7 +44,7 @@ class StorageNodeRepository {
     final result = query.find();
     query.close();
 
-    return result;
+    return _migrateNodes(result);
   }
 
   List<StorageNodeEntity> getChildren(String parentUuid) {
@@ -35,11 +59,11 @@ class StorageNodeRepository {
 
     query.close();
 
-    return result;
+    return _migrateNodes(result);
   }
 
   List<StorageNodeEntity> getValidMoveDestinations(StorageNodeEntity source) {
-    return box.getAll().where((node) {
+    final list = box.getAll().where((node) {
       if (node.isArchived) {
         return false;
       }
@@ -81,6 +105,7 @@ class StorageNodeRepository {
           return false;
       }
     }).toList();
+    return _migrateNodes(list);
   }
 
   StorageNodeEntity? getByUuid(String uuid) {
@@ -90,7 +115,7 @@ class StorageNodeRepository {
 
     query.close();
 
-    return node;
+    return _migrateNode(node);
   }
 
   bool isDescendant(String sourceUuid, String destinationUuid) {
@@ -160,7 +185,7 @@ class StorageNodeRepository {
       return [];
     }
 
-    return box.getAll().where((node) {
+    final list = box.getAll().where((node) {
       if (node.isArchived) return false;
       final name = node.name.toLowerCase();
 
@@ -170,6 +195,7 @@ class StorageNodeRepository {
 
       return name.contains(q) || description.contains(q) || tags.contains(q);
     }).toList();
+    return _migrateNodes(list);
   }
 
   void markAsViewed(String uuid) {
@@ -197,7 +223,7 @@ class StorageNodeRepository {
 
     items.sort((a, b) => b.viewedAt!.compareTo(a.viewedAt!));
 
-    return items.take(limit).toList();
+    return _migrateNodes(items.take(limit).toList());
   }
 
   List<StorageNodeEntity> getForgottenItems({int limit = 10}) {
@@ -213,7 +239,7 @@ class StorageNodeRepository {
 
     items.sort((a, b) => a.viewedAt!.compareTo(b.viewedAt!));
 
-    return items.take(limit).toList();
+    return _migrateNodes(items.take(limit).toList());
   }
 
   int getTotalItems() {
@@ -249,7 +275,7 @@ class StorageNodeRepository {
   }
 
   List<StorageNodeEntity> getArchivedItems() {
-    return box.getAll().where((e) => e.isArchived).toList();
+    return _migrateNodes(box.getAll().where((e) => e.isArchived).toList());
   }
 
   List<StorageNodeEntity> getImportantItems({int limit = 10}) {
@@ -265,13 +291,13 @@ class StorageNodeRepository {
 
     items.sort((a, b) => a.name.compareTo(b.name));
 
-    return items.take(limit).toList();
+    return _migrateNodes(items.take(limit).toList());
   }
 
   List<StorageNodeEntity> getExpiringItems({int days = 30}) {
     final now = DateTime.now();
 
-    return box.getAll().where((item) {
+    final list = box.getAll().where((item) {
       if (item.isArchived) return false;
 
       if (!item.trackExpiry) return false;
@@ -282,12 +308,13 @@ class StorageNodeRepository {
 
       return difference >= 0 && difference <= days;
     }).toList();
+    return _migrateNodes(list);
   }
 
   List<StorageNodeEntity> getExpiredItems() {
     final now = DateTime.now();
 
-    return box.getAll().where((item) {
+    final list = box.getAll().where((item) {
       if (item.isArchived) return false;
 
       if (!item.trackExpiry) return false;
@@ -296,6 +323,7 @@ class StorageNodeRepository {
 
       return item.expiryDate!.isBefore(now);
     }).toList();
+    return _migrateNodes(list);
   }
 
   void archiveItem(String uuid) {
@@ -319,11 +347,12 @@ class StorageNodeRepository {
   }
 
   List<StorageNodeEntity> getAllPossibleParents(String roomUuid) {
-    return box.getAll().where((node) {
+    final list = box.getAll().where((node) {
       return !node.isArchived &&
           node.roomUuid == roomUuid &&
           node.nodeType != 'item';
     }).toList();
+    return _migrateNodes(list);
   }
 
   void moveNode(String sourceUuid, String destinationUuid) {
@@ -345,9 +374,10 @@ class StorageNodeRepository {
   }
 
   List<StorageNodeEntity> getQuickAddDestinations() {
-    return box.getAll().where((node) {
+    final list = box.getAll().where((node) {
       return !node.isArchived && node.nodeType != NodeType.item.name;
     }).toList();
+    return _migrateNodes(list);
   }
 
   List<StorageNodeEntity> getItemsWithPhotosList() {
@@ -360,16 +390,24 @@ class StorageNodeRepository {
 
     items.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
-    return items;
+    return _migrateNodes(items);
   }
 
   List<StorageNodeEntity> getAllItems() {
-    return box.getAll().where((node) {
+    final list = box.getAll().where((node) {
       return node.nodeType == NodeType.item.name && !node.isArchived;
     }).toList();
+    return _migrateNodes(list);
   }
 
   int save(StorageNodeEntity node) {
+    final photo = node.photoPath;
+    if (photo != null && photo.isNotEmpty) {
+      final relative = PhotoStorageService.tryMigrateToRelative(photo);
+      if (relative != null && relative != photo) {
+        node.photoPath = relative;
+      }
+    }
     return box.put(node);
   }
 

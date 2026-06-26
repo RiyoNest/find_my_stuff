@@ -3,14 +3,20 @@ import 'package:flutter/material.dart';
 class RAppTextStyles {
   RAppTextStyles._();
 
-  static const titleLarge = TextStyle(
-    fontSize: 28,
+  static const displayLarge = TextStyle(
+    fontSize: 32,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
   );
 
+  static const titleLarge = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w600,
+    letterSpacing: -0.2,
+  );
+
   static const titleMedium = TextStyle(
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: FontWeight.w600,
   );
 

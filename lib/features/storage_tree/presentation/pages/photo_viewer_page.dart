@@ -9,13 +9,12 @@
 //     foreground consistently.
 //   - InteractiveViewer only shown when file exists.
 
-import 'dart:io';
-
-import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:find_my_stuff/core/services/photo_storage_service.dart';
+import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 
 class PhotoViewerPage extends StatelessWidget {
   final String imagePath;
@@ -31,8 +30,7 @@ class PhotoViewerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageFile = File(imagePath);
-    final fileExists = imageFile.existsSync();
+    final fileExists = PhotoStorageService.imageExists(imagePath);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -53,7 +51,8 @@ class PhotoViewerPage extends StatelessWidget {
               icon: const Icon(Icons.share, color: Colors.white),
               tooltip: 'Share Photo',
               onPressed: () async {
-                await Share.shareXFiles([XFile(imagePath)]);
+                final resolved = PhotoStorageService.resolvePath(imagePath);
+                await Share.shareXFiles([XFile(resolved)]);
               },
             ),
           IconButton(
@@ -70,7 +69,10 @@ class PhotoViewerPage extends StatelessWidget {
         child: Center(
           child: Hero(
             tag: imagePath,
-            child: Image.file(imageFile, fit: BoxFit.contain),
+            child: SafeImageWidget(
+              photoPath: imagePath,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       )

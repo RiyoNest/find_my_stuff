@@ -1,33 +1,58 @@
 // File: lib/features/archive/presentation/pages/archived_items_page.dart
-//
-// CHANGES:
-//   - Empty state replaced with illustrated CTA.
-//   - Error state shows retry instead of raw error string.
-//   - Tile now shows location path as subtitle (was: description).
-//   - Restore action wrapped in try/catch with AppSnackBar feedback.
-//   - Uses RAppSpacing/RAppRadius/RAppColors tokens throughout.
-
-import 'dart:io';
 
 import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
+import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
+import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
+import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
+import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
+import 'package:find_my_stuff/shared/utils/responsive_grid_delegate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class ArchivedItemsPage extends ConsumerWidget {
+class ArchivedItemsPage extends ConsumerStatefulWidget {
   const ArchivedItemsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final archivedAsync = ref.watch(archivedItemsProvider);
+  ConsumerState<ArchivedItemsPage> createState() => _ArchivedItemsPageState();
+}
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Archived Items')),
-      body: archivedAsync.when(
+class _ArchivedItemsPageState extends ConsumerState<ArchivedItemsPage> {
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final archivedAsync = ref.watch(archivedItemsProvider);
+    final repo = ref.read(storageNodeRepositoryProvider);
+
+    final segments = [
+      BreadcrumbSegment(
+        label: 'Home',
+        isHome: true,
+        onTap: () => context.go('/'),
+      ),
+      const BreadcrumbSegment(
+        label: 'Archive',
+        icon: Icons.archive_outlined,
+      ),
+    ];
+
+    return ContentPageScaffold(
+      title: 'Archived Items',
+      searchHintText: 'Search archived items...',
+      onSearchChanged: (val) {
+        setState(() {
+          _searchQuery = val;
+        });
+      },
+      initialSearchQuery: _searchQuery,
+      breadcrumbs: segments,
+      child: archivedAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Padding(
@@ -38,7 +63,7 @@ class ArchivedItemsPage extends ConsumerWidget {
                 Icon(
                   Icons.error_outline,
                   size: 40,
-                  color: Theme.of(context).colorScheme.error,
+                  color: themeErrorColor(context),
                 ),
                 const SizedBox(height: RAppSpacing.sm),
                 Text(
@@ -57,52 +82,55 @@ class ArchivedItemsPage extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(RAppSpacing.xl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.inventory_outlined,
-                      size: 56,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                    const SizedBox(height: RAppSpacing.md),
-                    Text(
-                      'Nothing archived yet',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: RAppSpacing.xs),
-                    Text(
-                      'Items you archive will appear here.\nYou can restore them at any time.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: RAppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return const EmptyStateWidget(
+              icon: Icons.archive_outlined,
+              title: 'Nothing archived yet',
+              description: 'Items you archive will appear here. You can restore them at any time.',
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(
-              horizontal: RAppSpacing.md,
-              vertical: RAppSpacing.sm,
+          // Apply contextual filtering
+          var filtered = items;
+          if (_searchQuery.trim().isNotEmpty) {
+            final query = _searchQuery.toLowerCase().trim();
+            filtered = filtered.where((item) {
+              final path = repo.buildPath(item).toLowerCase();
+              return item.name.toLowerCase().contains(query) ||
+                  (item.description?.toLowerCase().contains(query) ?? false) ||
+                  path.contains(query);
+            }).toList();
+          }
+
+          if (filtered.isEmpty) {
+            return const EmptyStateWidget(
+              icon: Icons.search_off_rounded,
+              title: 'No results found',
+              description: 'Try adjusting your search criteria.',
+            );
+          }
+
+          final cols = ResponsiveLayout.getColumns(context);
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cols,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: cols == 1 ? 3.5 : 1.3,
             ),
-            itemCount: items.length,
-            separatorBuilder: (_, __) =>
-            const SizedBox(height: RAppSpacing.sm),
             itemBuilder: (_, index) {
-              final item = items[index];
+              final item = filtered[index];
               return _ArchivedItemTile(item: item);
             },
           );
         },
       ),
     );
+  }
+
+  Color themeErrorColor(BuildContext context) {
+    return Theme.of(context).colorScheme.error;
   }
 }
 
@@ -133,37 +161,37 @@ class _ArchivedItemTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final repo = ref.read(storageNodeRepositoryProvider);
     final path = repo.buildPath(item);
-    final hasPhoto =
-        item.photoPath != null &&
-            item.photoPath!.isNotEmpty &&
-            File(item.photoPath!).existsSync();
 
     return Card(
       margin: EdgeInsets.zero,
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.6),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: RAppSpacing.md,
-          vertical: RAppSpacing.sm + 2,
+          vertical: RAppSpacing.sm + 4,
         ),
         child: Row(
           children: [
             // Thumbnail or icon
-            ClipRRect(
-              borderRadius: BorderRadius.circular(RAppRadius.sm),
-              child: hasPhoto
-                  ? Image.file(
-                File(item.photoPath!),
+            SafeImageWidget(
+              photoPath: item.photoPath,
+              width: 48,
+              height: 48,
+              borderRadius: BorderRadius.circular(8),
+              placeholder: Container(
                 width: 48,
                 height: 48,
-                fit: BoxFit.cover,
-              )
-                  : Container(
-                width: 48,
-                height: 48,
-                color: theme.colorScheme.surfaceContainerHigh,
-                child: Icon(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF5F8),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
                   Icons.archive_outlined,
-                  color: RAppColors.textSecondary,
+                  color: Color(0xFFD10047),
                   size: 24,
                 ),
               ),
@@ -177,8 +205,9 @@ class _ArchivedItemTile extends ConsumerWidget {
                 children: [
                   Text(
                     item.name,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -187,8 +216,8 @@ class _ArchivedItemTile extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       path,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: RAppColors.textSecondary,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -202,14 +231,14 @@ class _ArchivedItemTile extends ConsumerWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: RAppColors.accent.withOpacity(0.12),
+                        color: RAppColors.accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(RAppRadius.sm),
                       ),
                       child: Text(
                         'Important',
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: RAppColors.accent,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -222,7 +251,7 @@ class _ArchivedItemTile extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.unarchive_outlined),
               tooltip: 'Restore',
-              color: theme.colorScheme.primary,
+              color: const Color(0xFFD10047),
               onPressed: () => _restore(context, ref),
             ),
           ],

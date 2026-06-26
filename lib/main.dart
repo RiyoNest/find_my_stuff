@@ -12,11 +12,14 @@ import 'core/constants/app_theme.dart';
 import 'core/database/database_seed.dart';
 import 'core/database/objectbox_service.dart';
 import 'core/routing/app_router.dart';
-import 'core/services/app_review_service.dart';
-import 'core/services/app_update_service.dart';
+import 'core/services/app_info_service.dart';
 import 'core/services/crashlytics_service.dart';
 import 'firebase_options.dart';
 import 'shared/providers/theme_provider.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'core/services/photo_storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,10 +28,24 @@ void main() async {
 
   await CrashlyticsService.initialize();
 
+  final appDir = await getApplicationDocumentsDirectory();
+  PhotoStorageService.initialize(appDir.path);
+
   await ObjectBoxService.initialize();
   await DatabaseSeed.seed();
 
-  runApp(const ProviderScope(child: FindMyStuffApp()));
+  final prefs = await SharedPreferences.getInstance();
+
+  await AppInfoService.init();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const FindMyStuffApp(),
+    ),
+  );
 }
 
 class FindMyStuffApp extends ConsumerWidget {

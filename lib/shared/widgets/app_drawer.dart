@@ -14,6 +14,7 @@ import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:find_my_stuff/core/services/app_info_service.dart';
 import 'package:find_my_stuff/shared/providers/theme_provider.dart';
+import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -559,15 +560,7 @@ class _AboutInfoRow extends StatelessWidget {
       onTap: copyable && snackContext != null
           ? () {
         Clipboard.setData(ClipboardData(text: value));
-        ScaffoldMessenger.of(snackContext!).showSnackBar(
-          SnackBar(
-            content: Text('$title copied to clipboard'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(RAppRadius.md),
-            ),
-          ),
-        );
+        AppSnackBar.success(snackContext!, '$title copied to clipboard');
       }
           : null,
       borderRadius: BorderRadius.circular(RAppRadius.sm),
@@ -641,15 +634,7 @@ class _ContactCard extends StatelessWidget {
       onTap: copyable && snackContext != null
           ? () {
         Clipboard.setData(ClipboardData(text: value));
-        ScaffoldMessenger.of(snackContext!).showSnackBar(
-          SnackBar(
-            content: Text('$label copied to clipboard'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(RAppRadius.md),
-            ),
-          ),
-        );
+        AppSnackBar.success(snackContext!, '$label copied to clipboard');
       }
           : null,
       child: Container(

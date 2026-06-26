@@ -11,9 +11,7 @@
 import 'package:find_my_stuff/features/dashboard/presentation/pages/dashboard_items_page.dart';
 import 'package:find_my_stuff/features/gallery/presentation/pages/photo_gallery_page.dart';
 import 'package:find_my_stuff/features/home/presentation/pages/home_page.dart';
-import 'package:find_my_stuff/features/splash/presentation/pages/splash_page.dart';
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/quick_add_item_page.dart';
-import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/archive/presentation/pages/archived_items_page.dart';
@@ -62,20 +60,17 @@ class RAppRouter {
         builder: (context, state) => const QuickAddItemPage(),
       ),
       GoRoute(
-        path: '/dashboard-items',
+        path: '/dashboard/:type',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>;
           return DashboardItemsPage(
-            title: extra['title'] as String,
-            items: extra['items'] as List<StorageNodeEntity>,
+            type: state.pathParameters['type']!,
           );
         },
       ),
       GoRoute(
         path: '/photos',
         builder: (context, state) {
-          final items = state.extra as List<StorageNodeEntity>;
-          return PhotoGalleryPage(items: items);
+          return const PhotoGalleryPage();
         },
       ),
     ],
