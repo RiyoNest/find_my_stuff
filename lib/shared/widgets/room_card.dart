@@ -1,87 +1,199 @@
-// File: lib/shared/widgets/room_card.dart
-//
-// CHANGES: Full gradient background (rotating palette via
-// RAppGradients.roomGradient(index)) with white text + house emoji
-// as the "colored image" focal point. Takes an index param so each
-// room card in the horizontal row picks a distinct color automatically.
-
-import 'package:find_my_stuff/core/constants/app_gradients.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:find_my_stuff/shared/entities/room_entity.dart';
 import 'package:flutter/material.dart';
 
-class RoomCard extends StatelessWidget {
+class RoomCard extends StatefulWidget {
   final RoomEntity room;
-  final int index;
+  final int itemCount;
+  final int containerCount;
   final VoidCallback onTap;
 
   const RoomCard({
     super.key,
     required this.room,
-    required this.index,
+    required this.itemCount,
+    required this.containerCount,
     required this.onTap,
   });
 
-  // Room emojis rotate alongside the gradient palette for extra personality.
-  static const List<String> _roomEmojis = ['🏠', '🛋️', '🛏️', '🍳', '📚', '🪴'];
-  static const List<String> _roomLabels = [
-    'Living', 'Lounge', 'Bedroom', 'Kitchen', 'Study', 'Garden',
-  ];
+  @override
+  State<RoomCard> createState() => _RoomCardState();
+}
+
+class _RoomCardState extends State<RoomCard> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final gradient = RAppGradients.roomGradient(index);
-    final emoji = _roomEmojis[index % _roomEmojis.length];
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final roomName = widget.room.name.toLowerCase().trim();
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(RAppRadius.lg),
-      onTap: onTap,
-      child: Container(
-        width: 130,
-        padding: const EdgeInsets.all(RAppSpacing.md),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Decorative circle — top right
-            Positioned(
-              top: -20,
-              right: -20,
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.12),
+    // Default Visual Style (Hall/Default)
+    Color bgColor = isDark ? const Color(0xFF2C1E23) : const Color(0xFFFFF5F8);
+    Color tintColor = const Color(0xFFD10047);
+    Color borderColor = isDark ? const Color(0xFF4C1E2B) : const Color(0xFFF8D7E3);
+    String emoji = '🚪';
+
+    // Parse room type heuristics for premium styling
+    if (roomName.contains('bedroom') || roomName.contains('bed room') || roomName.contains('bed')) {
+      bgColor = isDark ? const Color(0xFF3B1E22) : const Color(0xFFFFF0F2);
+      tintColor = const Color(0xFFD10047);
+      borderColor = isDark ? const Color(0xFF5A1E26) : const Color(0xFFF8D7E3);
+      emoji = '🛏️';
+    } else if (roomName.contains('kitchen') || roomName.contains('cook')) {
+      bgColor = isDark ? const Color(0xFF3E2C1A) : const Color(0xFFFFF8E1);
+      tintColor = const Color(0xFFE65100);
+      borderColor = isDark ? const Color(0xFF5C3F24) : const Color(0xFFFFE082);
+      emoji = '🍳';
+    } else if (roomName.contains('garage') || roomName.contains('car')) {
+      bgColor = isDark ? const Color(0xFF263238) : const Color(0xFFECEFF1);
+      tintColor = const Color(0xFF455A64);
+      borderColor = isDark ? const Color(0xFF37474F) : const Color(0xFFCFD8DC);
+      emoji = '🚗';
+    } else if (roomName.contains('office') || roomName.contains('study') || roomName.contains('desk') || roomName.contains('work')) {
+      bgColor = isDark ? const Color(0xFF1E3A20) : const Color(0xFFE8F5E9);
+      tintColor = const Color(0xFF2E7D32);
+      borderColor = isDark ? const Color(0xFF2E5E32) : const Color(0xFFC8E6C9);
+      emoji = '💻';
+    } else if (roomName.contains('bathroom') || roomName.contains('bath') || roomName.contains('toilet') || roomName.contains('wash') || roomName.contains('shower')) {
+      bgColor = isDark ? const Color(0xFF113D40) : const Color(0xFFE0F7FA);
+      tintColor = const Color(0xFF00838F);
+      borderColor = isDark ? const Color(0xFF1F5E63) : const Color(0xFFB2EBF2);
+      emoji = '🚿';
+    } else if (roomName.contains('store') || roomName.contains('pantry') || roomName.contains('closet') || roomName.contains('wardrobe') || roomName.contains('utility')) {
+      bgColor = isDark ? const Color(0xFF2E2421) : const Color(0xFFEFEBE9);
+      tintColor = const Color(0xFF5D4037);
+      borderColor = isDark ? const Color(0xFF4A3B37) : const Color(0xFFD7CCC8);
+      emoji = '📦';
+    } else if (roomName.contains('living') || roomName.contains('hall') || roomName.contains('lounge') || roomName.contains('sitting') || roomName.contains('tv')) {
+      bgColor = isDark ? const Color(0xFF221A30) : const Color(0xFFEDE7F6);
+      tintColor = const Color(0xFF651FFF);
+      borderColor = isDark ? const Color(0xFF382A52) : const Color(0xFFD1C4E9);
+      emoji = '🛋️';
+    } else if (roomName.contains('dining')) {
+      bgColor = isDark ? const Color(0xFF23301D) : const Color(0xFFF1F8E9);
+      tintColor = const Color(0xFF33691E);
+      borderColor = isDark ? const Color(0xFF374D2E) : const Color(0xFFDCEDC8);
+      emoji = '🍽️';
+    } else if (roomName.contains('balcony') || roomName.contains('terrace') || roomName.contains('garden') || roomName.contains('yard')) {
+      bgColor = isDark ? const Color(0xFF1B331E) : const Color(0xFFE8F5E9);
+      tintColor = const Color(0xFF1B5E20);
+      borderColor = isDark ? const Color(0xFF2A4D2E) : const Color(0xFFC8E6C9);
+      emoji = '🏡';
+    }
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.03 : 1.00,
+        duration: const Duration(milliseconds: 180),
+        child: Semantics(
+          label: '${widget.room.name} room card',
+          button: true,
+          child: Tooltip(
+            message: 'View details of ${widget.room.name}',
+            child: Container(
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                border: Border.all(color: borderColor, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
+                    blurRadius: _isHovered ? 10 : 5,
+                    offset: Offset(0, _isHovered ? 5 : 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(RAppRadius.lg),
+                  onTap: widget.onTap,
+                  hoverColor: tintColor.withOpacity(0.04),
+                  splashColor: tintColor.withOpacity(0.1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              emoji,
+                              style: const TextStyle(fontSize: 32),
+                            ),
+                            // Metadata Chips row
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildBadgeChip(context, '📦', widget.itemCount, isDark, theme),
+                                const SizedBox(width: 4),
+                                _buildBadgeChip(context, '🗂', widget.containerCount, isDark, theme),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: RAppSpacing.md),
+                        Text(
+                          widget.room.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Emoji as the "colored image"
-                Text(emoji, style: const TextStyle(fontSize: 28)),
-                const SizedBox(height: RAppSpacing.sm + 4),
-                Text(
-                  room.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBadgeChip(BuildContext context, String icon, int count, bool isDark, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4) : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline.withOpacity(0.2) : const Color(0xFFECEFF1),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            icon,
+            style: const TextStyle(fontSize: 10),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
     );
   }

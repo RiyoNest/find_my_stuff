@@ -9,8 +9,6 @@
 //   - Uses RAppSpacing/RAppRadius/RAppColors tokens throughout.
 //   - Expiry date tile now shows a styled card instead of a plain button.
 
-import 'dart:io';
-
 import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
@@ -19,6 +17,7 @@ import 'package:find_my_stuff/core/utils/validation_helpers.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
+import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -44,6 +43,8 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
   DateTime? _expiryDate;
   String? _photoPath;
   bool _isSaving = false;
+  bool _isSaved = false;
+  final List<String> _tempPhotoPaths = [];
 
   final _picker = ImagePicker();
 
@@ -66,6 +67,11 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
     _nameController.dispose();
     _descriptionController.dispose();
     _tagsController.dispose();
+    if (!_isSaved) {
+      for (final path in _tempPhotoPaths) {
+        PhotoStorageService.deletePhoto(path);
+      }
+    }
     super.dispose();
   }
 
@@ -76,6 +82,7 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
     );
     if (file == null) return;
     final saved = await PhotoStorageService.savePhoto(file.path);
+    _tempPhotoPaths.add(saved);
     setState(() => _photoPath = saved);
   }
 
@@ -86,6 +93,7 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
     );
     if (file == null) return;
     final saved = await PhotoStorageService.savePhoto(file.path);
+    _tempPhotoPaths.add(saved);
     setState(() => _photoPath = saved);
   }
 
@@ -142,6 +150,21 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
       )..id = widget.node.id;
 
       ref.read(storageNodeRepositoryProvider).save(updatedNode);
+      _isSaved = true;
+
+      // Delete the original photo file if it was removed or replaced
+      final oldPhotoPath = widget.node.photoPath;
+      if (oldPhotoPath != null && oldPhotoPath.isNotEmpty && oldPhotoPath != _photoPath) {
+        await PhotoStorageService.deletePhoto(oldPhotoPath);
+      }
+
+      // Delete unused temporary photos from this session
+      for (final path in _tempPhotoPaths) {
+        if (path != _photoPath) {
+          await PhotoStorageService.deletePhoto(path);
+        }
+      }
+
       ref.read(storageRefreshProvider.notifier).state++;
 
       if (mounted) {
@@ -293,14 +316,12 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
               const SizedBox(height: RAppSpacing.sm),
 
               if (_photoPath != null) ...[
-                ClipRRect(
+                SafeImageWidget(
+                  photoPath: _photoPath,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(RAppRadius.md),
-                  child: Image.file(
-                    File(_photoPath!),
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
                 ),
                 const SizedBox(height: RAppSpacing.sm),
                 TextButton.icon(

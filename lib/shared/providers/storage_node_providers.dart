@@ -60,6 +60,7 @@ final searchProvider = FutureProvider.family<List<StorageNodeEntity>, String>((
 final recentlyViewedProvider = FutureProvider<List<StorageNodeEntity>>((
   ref,
 ) async {
+  ref.watch(storageRefreshProvider);
   final repo = ref.read(storageNodeRepositoryProvider);
 
   return repo.getRecentlyViewed();
@@ -68,6 +69,7 @@ final recentlyViewedProvider = FutureProvider<List<StorageNodeEntity>>((
 final forgottenItemsProvider = FutureProvider<List<StorageNodeEntity>>((
   ref,
 ) async {
+  ref.watch(storageRefreshProvider);
   final repo = ref.read(storageNodeRepositoryProvider);
 
   return repo.getForgottenItems();
@@ -118,9 +120,28 @@ final expiredItemsProvider = FutureProvider<List<StorageNodeEntity>>((
 final archivedItemsProvider = FutureProvider<List<StorageNodeEntity>>((
   ref,
 ) async {
+  ref.watch(storageRefreshProvider);
   final repo = ref.read(storageNodeRepositoryProvider);
 
   return repo.getArchivedItems();
+});
+
+final allItemsProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
+  ref.watch(storageRefreshProvider);
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getAllItems();
+});
+
+final itemsWithPhotosProvider = FutureProvider<List<StorageNodeEntity>>((
+  ref,
+) async {
+  ref.watch(storageRefreshProvider);
+  final repo = ref.read(storageNodeRepositoryProvider);
+
+  return repo.getItemsWithPhotosList();
 });
 
 final moveDestinationsProvider =

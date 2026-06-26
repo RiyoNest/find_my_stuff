@@ -1,100 +1,175 @@
-import 'dart:io';
+// File: lib/features/gallery/presentation/pages/photo_gallery_page.dart
 
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/photo_viewer_page.dart';
-import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
+import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
+import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
+import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
+import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
+import 'package:find_my_stuff/shared/utils/responsive_grid_delegate.dart';
 
-class PhotoGalleryPage extends StatelessWidget {
-  final List<StorageNodeEntity> items;
+class PhotoGalleryPage extends ConsumerStatefulWidget {
+  const PhotoGalleryPage({super.key});
 
-  const PhotoGalleryPage({
-    super.key,
-    required this.items,
-  });
+  @override
+  ConsumerState<PhotoGalleryPage> createState() => _PhotoGalleryPageState();
+}
+
+class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Photos'),
-        ),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.photo_library_outlined,
-                size: 80,
-              ),
-              SizedBox(height: 12),
-              Text('No photos found'),
-            ],
-          ),
-        ),
-      );
-    }
+    final itemsAsync = ref.watch(itemsWithPhotosProvider);
+    final repo = ref.read(storageNodeRepositoryProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Photos (${items.length})'),
+    final segments = [
+      BreadcrumbSegment(
+        label: 'Home',
+        isHome: true,
+        onTap: () => context.go('/'),
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: items.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.8,
-        ),
-        itemBuilder: (_, index) {
-          final item = items[index];
+      const BreadcrumbSegment(
+        label: 'Photos',
+        icon: Icons.photo_library_outlined,
+      ),
+    ];
 
-          return InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PhotoViewerPage(
-                    imagePath: item.photoPath!,
-                    itemUuid: item.uuid,
-                    itemName: item.name,
+    return ContentPageScaffold(
+      title: 'Photo Gallery',
+      searchHintText: 'Search photos...',
+      onSearchChanged: (val) {
+        setState(() {
+          _searchQuery = val;
+        });
+      },
+      initialSearchQuery: _searchQuery,
+      breadcrumbs: segments,
+      child: itemsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text(err.toString())),
+        data: (items) {
+          if (items.isEmpty) {
+            return const EmptyStateWidget(
+              icon: Icons.photo_outlined,
+              title: 'No photos available',
+              description: 'Items with photos attached will show up here.',
+            );
+          }
+
+          // Contextual search query filtering
+          var filtered = items;
+          if (_searchQuery.trim().isNotEmpty) {
+            final query = _searchQuery.toLowerCase().trim();
+            filtered = filtered.where((item) {
+              final path = repo.buildPath(item).toLowerCase();
+              return item.name.toLowerCase().contains(query) ||
+                  (item.description?.toLowerCase().contains(query) ?? false) ||
+                  path.contains(query);
+            }).toList();
+          }
+
+          if (filtered.isEmpty) {
+            return const EmptyStateWidget(
+              icon: Icons.search_off_rounded,
+              title: 'No results found',
+              description: 'Try adjusting your search criteria.',
+            );
+          }
+
+          final cols = ResponsiveLayout.getColumns(context);
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cols,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: ResponsiveLayout.getPhotoCardAspectRatio(cols),
+            ),
+            itemBuilder: (_, index) {
+              final item = filtered[index];
+              final path = repo.buildPath(item);
+
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PhotoViewerPage(
+                        imagePath: item.photoPath!,
+                        itemUuid: item.uuid,
+                        itemName: item.name,
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
+                  ),
+                  elevation: 2,
+                  shadowColor: Colors.black.withOpacity(0.08),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Hero(
+                          tag: item.photoPath!,
+                          child: SafeImageWidget(
+                            photoPath: item.photoPath,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            placeholder: Container(
+                              color: const Color(0xFFFFF5F8),
+                              child: const Icon(
+                                Icons.broken_image_outlined,
+                                size: 36,
+                                color: Color(0xFFD10047),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              item.name,
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              path.isNotEmpty ? path : 'No location path',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
             },
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Hero(
-                      tag: item.photoPath!,
-                      child: File(item.photoPath!).existsSync()
-                          ? Image.file(
-                        File(item.photoPath!),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      )
-                          : const Icon(
-                        Icons.broken_image,
-                        size: 50,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      item.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           );
         },
       ),
