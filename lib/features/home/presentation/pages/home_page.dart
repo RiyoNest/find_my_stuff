@@ -35,7 +35,6 @@
 // NOTE: Place-switching UI is intentionally omitted — you said you're
 // holding that feature for the next version.
 
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/widgets/quick_add_sheet.dart';
 import 'package:find_my_stuff/shared/widgets/speed_dial_fab.dart';
@@ -245,18 +244,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final statsAsync = ref.watch(dashboardStatsProvider);
     final expiringAsync = ref.watch(expiringItemsProvider);
     final expiredAsync = ref.watch(expiredItemsProvider);
-    final destinationsAsync = ref.watch(quickAddDestinationsProvider);
     final archivedAsync = ref.watch(archivedItemsProvider);
-
-    // Fix: whenever any storage write increments storageRefreshProvider,
-    // also re-evaluate quickAddDestinationsProvider so the Quick Add
-    // button appears/disappears immediately on navigating back — not only
-    // on pull-to-refresh or app restart.
-    ref.listen(storageRefreshProvider, (_, __) {
-      ref.invalidate(quickAddDestinationsProvider);
-    });
-
-    final canQuickAdd = destinationsAsync.value?.isNotEmpty ?? false;
     final archivedCount = archivedAsync.value?.length ?? 0;
 
     return Scaffold(
@@ -320,29 +308,27 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                   // Conditional Quick Add — only shown once a path exists,
                   // so first-time users learn the hierarchy first.
-                  if (canQuickAdd) ...[
-                    SizedBox(height: context.spacingS + 4),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: _addItem,
-                        icon: const Icon(Icons.add_circle_outline_rounded),
-                        label: Text(
-                          'Quick Add Item',
-                          style: context.buttonStyle,
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD10047),
-                          foregroundColor: Colors.white,
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: context.borderRadiusPill,
-                          ),
+                  SizedBox(height: context.spacingS + 4),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: _addItem,
+                      icon: const Icon(Icons.add_circle_outline_rounded),
+                      label: Text(
+                        'Add Item',
+                        style: context.buttonStyle,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD10047),
+                        foregroundColor: Colors.white,
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: context.borderRadiusPill,
                         ),
                       ),
                     ),
-                  ],
+                  ),
 
                   SizedBox(height: context.spacingM),
 
@@ -388,7 +374,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     data: (rooms) {
                       if (rooms.isEmpty) {
-                        return _EmptyHomeState(onAddRoom: _addRoom);
+                        return _EmptyHomeState(
+                          onAddItem: _addItem,
+                          onAddRoom: _addRoom,
+                        );
                       }
 
                       return Column(
@@ -830,9 +819,13 @@ class _AddRoomCard extends StatelessWidget {
 }
 
 class _EmptyHomeState extends StatelessWidget {
+  final VoidCallback onAddItem;
   final VoidCallback onAddRoom;
 
-  const _EmptyHomeState({required this.onAddRoom});
+  const _EmptyHomeState({
+    required this.onAddItem,
+    required this.onAddRoom,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -853,20 +846,34 @@ class _EmptyHomeState extends StatelessWidget {
               Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.w700)),
               SizedBox(height: context.spacingXS),
               Text(
-                'Add your first room to start organizing\nwhere your things live.',
+                'Add your items to start organizing\nwhere your things live.',
                 textAlign: TextAlign.center,
                 style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               SizedBox(height: context.spacingM + 4),
               FilledButton.icon(
-                onPressed: onAddRoom,
-                icon: const Icon(Icons.add),
+                onPressed: onAddItem,
+                icon: const Icon(Icons.add_circle_outline_rounded),
                 label: Text(
-                  'Add Your First Room',
+                  'Add Your First Item',
                   style: context.buttonStyle,
                 ),
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size(120, 48),
+                  minimumSize: const Size(180, 48),
+                  backgroundColor: const Color(0xFFD10047),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: onAddRoom,
+                icon: const Icon(Icons.meeting_room_rounded),
+                label: Text(
+                  'Create Room',
+                  style: context.buttonStyle,
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(180, 48),
                 ),
               ),
             ],

@@ -1,618 +1,930 @@
 // File: lib/features/storage_tree/presentation/pages/quick_add_item_page.dart
-//
-// CHANGES in this version:
-//   - "Add Item To" destination list is now a fixed-height card with its
-//     own internal scroll + live search filter. Previously the radio list
-//     grew unbounded (every room × location × section × container), so
-//     at 10+ destinations the user had to scroll past the entire list
-//     before reaching the form fields. Now the picker is always 220px,
-//     the rest of the form is immediately reachable, and the user can
-//     type to filter destinations instead of scrolling.
-//   - Selected destination shown as a highlighted chip above the list
-//     so the user can always see their choice even after scrolling away.
-//   - Everything else (validation, AppSnackBar, loading state on save
-//     button) is unchanged from the previous version.
 
-import 'package:find_my_stuff/core/constants/app_colours.dart';
-import 'package:find_my_stuff/core/constants/app_radius.dart';
-import 'package:find_my_stuff/core/constants/app_spacing.dart';
-import 'package:find_my_stuff/core/services/photo_storage_service.dart';
-import 'package:find_my_stuff/core/utils/validation_helpers.dart';
-import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
-import 'package:find_my_stuff/shared/enums/node_type.dart';
-import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
-import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
-import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
-import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/app_colours.dart';
+import '../../../../core/constants/app_radius.dart';
+import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/validation_helpers.dart';
+import '../../../../shared/entities/place_entity.dart';
+import '../../../../shared/entities/room_entity.dart';
+import '../../../../shared/entities/storage_node_entity.dart';
+import '../../../../shared/enums/node_type.dart';
+import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/providers/room_providers.dart';
+import '../../../../shared/providers/storage_node_providers.dart';
+import '../../../../shared/repositories/place_repository.dart';
+import '../../../../shared/widgets/custom_snackbar.dart';
+import '../../../../shared/widgets/quick_add_sheet.dart';
+import '../../../../shared/widgets/safe_image_widget.dart';
+import '../controllers/quick_add_wizard_controller.dart';
+import '../models/quick_add_draft.dart';
 
 class QuickAddItemPage extends ConsumerStatefulWidget {
-  const QuickAddItemPage({super.key});
+  final QuickAddDraft? initialDraft;
+  const QuickAddItemPage({super.key, this.initialDraft});
 
   @override
   ConsumerState<QuickAddItemPage> createState() => _QuickAddItemPageState();
 }
 
 class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
+  late final PageController _pageController;
   final _formKey = GlobalKey<FormState>();
 
-  StorageNodeEntity? _selectedDestination;
-  String? _destinationError;
-
-  // Separate controller for the destination search field —
-  // kept out of the Form so it doesn't interfere with form validation.
-  final _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _tagsController = TextEditingController();
-
-  bool _isImportant = false;
-  bool _trackExpiry = false;
-  DateTime? _expiryDate;
-  String? _photoPath;
-  bool _isSaving = false;
-  bool _isSaved = false;
-  final List<String> _tempPhotoPaths = [];
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _tagsController;
 
   final _picker = ImagePicker();
+
+  final _placeRepo = PlaceRepository();
+  late final PlaceEntity _currentPlace;
+
+  // Local navigation helper to track if sections/containers are skipped
+  bool _skipSection = false;
+  bool _skipContainer = false;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.toLowerCase());
+    _pageController = PageController(initialPage: 0);
+
+    // Get current place (default to first seeded place)
+    final places = _placeRepo.getAll();
+    if (places.isNotEmpty) {
+      _currentPlace = places.first;
+    }
+
+    final initialDraft = widget.initialDraft ?? const QuickAddDraft();
+    _nameController = TextEditingController(text: initialDraft.itemName);
+    _descriptionController = TextEditingController(text: initialDraft.description);
+    _tagsController = TextEditingController(text: initialDraft.tags);
+
+    // Sync form inputs to Riverpod controller
+    _nameController.addListener(() {
+      final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+      final draft = ref.read(quickAddWizardProvider(widget.initialDraft)).draft;
+      controller.updateDraft(draft.copyWith(itemName: _nameController.text));
+    });
+    _descriptionController.addListener(() {
+      final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+      final draft = ref.read(quickAddWizardProvider(widget.initialDraft)).draft;
+      controller.updateDraft(draft.copyWith(description: _descriptionController.text));
+    });
+    _tagsController.addListener(() {
+      final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+      final draft = ref.read(quickAddWizardProvider(widget.initialDraft)).draft;
+      controller.updateDraft(draft.copyWith(tags: _tagsController.text));
     });
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _pageController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     _tagsController.dispose();
-    if (!_isSaved) {
-      for (final path in _tempPhotoPaths) {
-        PhotoStorageService.deletePhoto(path);
-      }
-    }
     super.dispose();
   }
 
   Future<void> _pickFromGallery() async {
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
+    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (file == null) return;
-    final saved = await PhotoStorageService.savePhoto(file.path);
-    _tempPhotoPaths.add(saved);
-    setState(() => _photoPath = saved);
+    final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+    await controller.attachPhoto(file.path);
   }
 
   Future<void> _takePhoto() async {
-    final file = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
-    );
+    final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
     if (file == null) return;
-    final saved = await PhotoStorageService.savePhoto(file.path);
-    _tempPhotoPaths.add(saved);
-    setState(() => _photoPath = saved);
+    final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+    await controller.attachPhoto(file.path);
   }
 
-  Future<void> _saveItem() async {
-    setState(() {
-      _destinationError =
-      _selectedDestination == null ? 'Please select a destination' : null;
-    });
-
-    final formValid = _formKey.currentState?.validate() ?? false;
-
-    if (!formValid || _selectedDestination == null) {
-      if (_selectedDestination == null) {
-        AppSnackBar.warning(
-          context,
-          'Please select a destination for this item',
-        );
-      } else {
-        AppSnackBar.warning(context, 'Please fix the highlighted fields');
-      }
-      return;
-    }
-
-    if (_trackExpiry && _expiryDate == null) {
-      AppSnackBar.warning(
-        context,
-        'Please select an expiry date, or turn off Track Expiry',
-      );
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
-    try {
-      final repo = ref.read(storageNodeRepositoryProvider);
-
-      final item = StorageNodeEntity(
-        uuid: const Uuid().v4(),
-        roomUuid: _selectedDestination!.roomUuid,
-        parentUuid: _selectedDestination!.uuid,
-        nodeType: NodeType.item.name,
-        name: ValidationHelpers.sanitize(_nameController.text),
-        description: _descriptionController.text.trim(),
-        tags: _tagsController.text.trim(),
-        photoPath: _photoPath,
-        isImportant: _isImportant,
-        trackExpiry: _trackExpiry,
-        expiryDate: _expiryDate,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      repo.save(item);
-      _isSaved = true;
-
-      // Delete unused temporary photos from this session
-      for (final path in _tempPhotoPaths) {
-        if (path != _photoPath) {
-          await PhotoStorageService.deletePhoto(path);
-        }
-      }
-
-      ref.read(storageRefreshProvider.notifier).state++;
-
-      if (mounted) {
-        AppSnackBar.success(context, '"${item.name}" added successfully');
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.error(context, "Couldn't save item. Please try again.");
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+  void _onBackPress(QuickAddWizardState state, QuickAddWizardController controller) {
+    if (state.step == QuickAddWizardStep.storagePath) {
+      controller.previousStep();
+    } else {
+      Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final destinationsAsync = ref.watch(quickAddDestinationsProvider);
+    final state = ref.watch(quickAddWizardProvider(widget.initialDraft));
+    final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+
+    // Listens to validation errors and triggers snackbar
+    ref.listen<QuickAddWizardState>(quickAddWizardProvider(widget.initialDraft), (previous, next) {
+      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+        AppSnackBar.error(context, next.errorMessage!);
+      }
+      if (previous?.step != next.step) {
+        final targetPage = next.step == QuickAddWizardStep.itemDetails ? 0 : 1;
+        _pageController.animateToPage(
+          targetPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quick Add Item')),
-      body: destinationsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(RAppSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Couldn't load destinations: $e"),
-                const SizedBox(height: RAppSpacing.sm),
-                TextButton.icon(
-                  onPressed: () =>
-                      ref.invalidate(quickAddDestinationsProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+      appBar: AppBar(
+        title: Text(
+          state.step == QuickAddWizardStep.itemDetails ? 'Add Item' : 'Select Location',
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _onBackPress(state, controller),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(RAppSpacing.md),
+              child: _buildStepTracker(state.step),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildStep1Details(state, controller),
+                  _buildStep2Path(state, controller),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepTracker(QuickAddWizardStep currentStep) {
+    final isStep1 = currentStep == QuickAddWizardStep.itemDetails;
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: primaryColor,
+                child: isStep1
+                    ? const Text('1', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))
+                    : const Icon(Icons.check, color: Colors.white, size: 14),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Item Details',
+                style: TextStyle(
+                  fontWeight: isStep1 ? FontWeight.bold : FontWeight.normal,
+                  color: isStep1 ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
                 ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 40,
+          height: 2,
+          color: isStep1 ? theme.colorScheme.outlineVariant : primaryColor,
+        ),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: isStep1 ? theme.colorScheme.outlineVariant : primaryColor,
+                child: Text(
+                  '2',
+                  style: TextStyle(
+                    color: isStep1 ? theme.colorScheme.onSurfaceVariant : Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Location',
+                style: TextStyle(
+                  fontWeight: !isStep1 ? FontWeight.bold : FontWeight.normal,
+                  color: !isStep1 ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep1Details(QuickAddWizardState state, QuickAddWizardController controller) {
+    final theme = Theme.of(context);
+    final draft = state.draft;
+
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(RAppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('What are you adding?', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: RAppSpacing.xs),
+            Text(
+              'Enter details for your new item.',
+              style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: RAppSpacing.lg),
+
+            // Item Name
+            TextFormField(
+              controller: _nameController,
+              autofocus: widget.initialDraft == null,
+              maxLength: ValidationHelpers.maxItemNameLength,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Item Name *',
+                border: OutlineInputBorder(),
+              ),
+              validator: ValidationHelpers.validateItemName,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+            ),
+            const SizedBox(height: RAppSpacing.md),
+
+            // Description
+            TextFormField(
+              controller: _descriptionController,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: RAppSpacing.md),
+
+            // Photos
+            Text('Photos', style: context.titleStyle.copyWith(fontSize: 16)),
+            const SizedBox(height: RAppSpacing.sm),
+            if (draft.photos.isNotEmpty) ...[
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: draft.photos.length,
+                  itemBuilder: (context, idx) {
+                    final p = draft.photos[idx];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Stack(
+                        children: [
+                          SafeImageWidget(
+                            photoPath: p,
+                            height: 120,
+                            width: 120,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(RAppRadius.md),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: CircleAvatar(
+                              radius: 14,
+                              backgroundColor: Colors.black.withOpacity(0.6),
+                              child: IconButton(
+                                icon: const Icon(Icons.close, size: 14, color: Colors.white),
+                                padding: EdgeInsets.zero,
+                                onPressed: () => controller.removePhoto(p),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: RAppSpacing.sm),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickFromGallery,
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Gallery'),
+                  ),
+                ),
+                const SizedBox(width: RAppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _takePhoto,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Camera'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: RAppSpacing.md),
+
+            // Tags
+            TextFormField(
+              controller: _tagsController,
+              maxLength: 200,
+              decoration: const InputDecoration(
+                labelText: 'Tags',
+                hintText: 'comma, separated, tags',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: RAppSpacing.md),
+
+            // Option switches
+            SwitchListTile(
+              value: draft.isImportant,
+              title: const Text('Mark as Important'),
+              secondary: const Icon(Icons.star_outline),
+              onChanged: (v) => controller.updateDraft(draft.copyWith(isImportant: v)),
+            ),
+            SwitchListTile(
+              value: draft.expiryEnabled,
+              title: const Text('Track Expiry'),
+              secondary: const Icon(Icons.schedule_outlined),
+              onChanged: (v) => controller.updateDraft(
+                draft.copyWith(expiryEnabled: v, clearExpiryDate: !v),
+              ),
+            ),
+
+            if (draft.expiryEnabled) ...[
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: Text(
+                  draft.expiryDate == null
+                      ? 'Select Expiry Date'
+                      : draft.expiryDate.toString().split(' ').first,
+                  style: draft.expiryDate == null ? TextStyle(color: RAppColors.textSecondary) : null,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2100),
+                    initialDate: draft.expiryDate ?? DateTime.now(),
+                  );
+                  if (picked != null) {
+                    controller.updateDraft(draft.copyWith(expiryDate: picked));
+                  }
+                },
+              ),
+            ],
+            const SizedBox(height: RAppSpacing.lg),
+
+            // Next button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    controller.nextStep();
+                  }
+                },
+                child: Text('Next: Choose Location', style: context.buttonStyle),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep2Path(QuickAddWizardState state, QuickAddWizardController controller) {
+    final theme = Theme.of(context);
+    final draft = state.draft;
+
+    final roomsAsync = ref.watch(roomListProvider(_currentPlace.uuid));
+
+    // Watch child nodes at the top level to avoid nested loaders and enable autocommit skip
+    final sectionsAsync = draft.locationUuid != null
+        ? ref.watch(childNodesProvider(draft.locationUuid!))
+        : null;
+    final sections = sectionsAsync?.value?.where((c) => c.nodeType == NodeType.section.name).toList() ?? [];
+    final isSectionSkipped = _skipSection || sections.isEmpty;
+
+    final containerParentUuid = draft.sectionUuid ?? (isSectionSkipped ? draft.locationUuid : null);
+    final containersAsync = containerParentUuid != null
+        ? ref.watch(childNodesProvider(containerParentUuid))
+        : null;
+    final containers = containersAsync?.value?.where((c) => c.nodeType == NodeType.container.name).toList() ?? [];
+    final isContainerSkipped = _skipContainer || containers.isEmpty;
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(RAppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Where is it stored?', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: RAppSpacing.xs),
+                Text(
+                  'Assign or create a place for this item.',
+                  style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: RAppSpacing.lg),
+
+                // ─── ROOM SELECTION ───
+                roomsAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Error loading rooms: $e'),
+                  data: (rooms) => _buildSelectionSection<RoomEntity>(
+                    title: 'Room',
+                    subtitle: 'Choose which room this item lives in.',
+                    items: rooms,
+                    selectedUuid: draft.roomUuid,
+                    getName: (r) => r.name,
+                    getUuid: (r) => r.uuid,
+                    onSelected: (uuid) {
+                      controller.selectRoom(uuid);
+                      setState(() {
+                        _skipSection = false;
+                        _skipContainer = false;
+                      });
+                    },
+                    onCreateNew: () => _createRoomInline(controller),
+                    helperText: 'No rooms yet. Create one to begin.',
+                  ),
+                ),
+
+                // ─── STORAGE LOCATION SELECTION ───
+                if (draft.roomUuid != null) ...[
+                  const SizedBox(height: RAppSpacing.lg),
+                  ref.watch(storageLocationsProvider(draft.roomUuid!)).when(
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Text('Error loading locations: $e'),
+                        data: (locations) => _buildSelectionSection<StorageNodeEntity>(
+                          title: 'Storage Location',
+                          subtitle: 'e.g. Wardrobe, Pantry, Desk',
+                          items: locations,
+                          selectedUuid: draft.locationUuid,
+                          getName: (l) => l.name,
+                          getUuid: (l) => l.uuid,
+                          onSelected: (uuid) {
+                            controller.selectLocation(uuid);
+                            setState(() {
+                              _skipSection = false;
+                              _skipContainer = false;
+                            });
+                          },
+                          onCreateNew: () => _createLocationInline(controller, draft.roomUuid!),
+                          helperText: 'No storage locations yet. Create one to continue.',
+                        ),
+                      ),
+                ],
+
+                // ─── SECTION SELECTION ───
+                if (draft.locationUuid != null) ...[
+                  const SizedBox(height: RAppSpacing.lg),
+                  if (sectionsAsync != null && sectionsAsync.isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (sectionsAsync != null && sectionsAsync.hasError)
+                    Text('Error loading sections: ${sectionsAsync.error}')
+                  else
+                    _buildSelectionSection<StorageNodeEntity>(
+                      title: 'Section (Optional)',
+                      subtitle: 'e.g. Top Shelf, Drawer 2',
+                      items: sections,
+                      selectedUuid: draft.sectionUuid,
+                      getName: (s) => s.name,
+                      getUuid: (s) => s.uuid,
+                      isSkipped: isSectionSkipped,
+                      onSkipChanged: (skip) {
+                        setState(() {
+                          _skipSection = skip;
+                          if (skip) {
+                            controller.selectSection(null);
+                          }
+                        });
+                      },
+                      skipLabel: 'No Section',
+                      helperText: 'No sections yet. Create one if needed, or continue without one.',
+                      onSelected: (uuid) {
+                        controller.selectSection(uuid);
+                        setState(() {
+                          _skipSection = false;
+                          _skipContainer = false;
+                        });
+                      },
+                      onCreateNew: () => _createSectionInline(controller, draft.roomUuid!, draft.locationUuid!),
+                    ),
+                ],
+
+                // ─── CONTAINER SELECTION ───
+                if (draft.locationUuid != null && (draft.sectionUuid != null || isSectionSkipped)) ...[
+                  const SizedBox(height: RAppSpacing.lg),
+                  if (containersAsync != null && containersAsync.isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (containersAsync != null && containersAsync.hasError)
+                    Text('Error loading containers: ${containersAsync.error}')
+                  else
+                    _buildSelectionSection<StorageNodeEntity>(
+                      title: 'Container (Optional)',
+                      subtitle: 'e.g. Blue Box, Plastic Pouch',
+                      items: containers,
+                      selectedUuid: draft.containerUuid,
+                      getName: (c) => c.name,
+                      getUuid: (c) => c.uuid,
+                      isSkipped: isContainerSkipped,
+                      onSkipChanged: (skip) {
+                        setState(() {
+                          _skipContainer = skip;
+                          if (skip) {
+                            controller.selectContainer(null);
+                          }
+                        });
+                      },
+                      skipLabel: 'No Container',
+                      helperText: 'No containers yet. Create one if needed, or continue without one.',
+                      onSelected: (uuid) {
+                        controller.selectContainer(uuid);
+                        setState(() {
+                          _skipContainer = false;
+                        });
+                      },
+                      onCreateNew: () => _createContainerInline(
+                        controller,
+                        draft.roomUuid!,
+                        draft.sectionUuid ?? draft.locationUuid!,
+                      ),
+                    ),
+                ],
+                const SizedBox(height: RAppSpacing.lg),
               ],
             ),
           ),
         ),
-        data: (destinations) {
-          final repo = ref.read(storageNodeRepositoryProvider);
 
-          // Sort deepest paths first (most specific destination at top).
-          destinations.sort(
-                (a, b) => repo
-                .getPathToRoot(b)
-                .length
-                .compareTo(repo.getPathToRoot(a).length),
-          );
+        // Live Path Summary Card and Save button fixed at the bottom
+        Container(
+          padding: const EdgeInsets.all(RAppSpacing.md),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Dynamic summary card
+              _buildPathSummaryCard(draft),
+              const SizedBox(height: RAppSpacing.sm),
 
-          if (destinations.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(RAppSpacing.lg),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.location_off_outlined, size: 48),
-                    const SizedBox(height: RAppSpacing.sm),
-                    const Text(
-                      'No locations available yet',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: RAppSpacing.xs),
-                    Text(
-                      'Create a Room and a Location first, then come back here.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // Apply search filter.
-          final filtered = _searchQuery.isEmpty
-              ? destinations
-              : destinations.where((d) {
-            final path = repo.buildPath(d).toLowerCase();
-            return d.name.toLowerCase().contains(_searchQuery) ||
-                path.contains(_searchQuery);
-          }).toList();
-
-          return Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(RAppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Action buttons row
+              Row(
                 children: [
-                  // ── Destination Picker ──────────────────────────────
-                  Text(
-                    'Add Item To',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: RAppSpacing.xs),
-                  Text(
-                    'Choose where this item will be stored',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-
-                  // Selected destination summary chip.
-                  if (_selectedDestination != null) ...[
-                    const SizedBox(height: RAppSpacing.sm),
-                    Chip(
-                      avatar: Icon(
-                        Icons.check_circle,
-                        size: 16,
-                        color: RAppColors.success,
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: controller.previousStep,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
                       ),
-                      label: Text(
-                        _selectedDestination!.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      child: const Text('Back'),
+                    ),
+                  ),
+                  const SizedBox(width: RAppSpacing.md),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: state.isSaving || !_isHierarchyValid(draft) ? null : () => _onSave(controller),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
                       ),
-                      deleteIcon: const Icon(Icons.close, size: 16),
-                      onDeleted: () => setState(() {
-                        _selectedDestination = null;
-                        _destinationError = 'Please select a destination';
-                      }),
-                    ),
-                  ],
-
-                  if (_destinationError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: RAppSpacing.xs),
-                      child: Text(
-                        _destinationError!,
-                        style: context.bodySmallStyle.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: RAppSpacing.sm),
-
-                  // Fixed-height searchable list card.
-                  Container(
-                    height: 220,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: RAppColors.border),
-                      borderRadius: BorderRadius.circular(RAppRadius.md),
-                    ),
-                    child: Column(
-                      children: [
-                        // Search field pinned at top of the card.
-                        Padding(
-                          padding: const EdgeInsets.all(RAppSpacing.sm),
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Search locations...',
-                              prefixIcon: const Icon(Icons.search, size: 20),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                icon: const Icon(Icons.clear, size: 18),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() => _searchQuery = '');
-                                },
-                              )
-                                  : null,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: RAppSpacing.sm,
-                                vertical: RAppSpacing.sm,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius:
-                                BorderRadius.circular(RAppRadius.sm),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        // Scrollable list of matching destinations.
-                        Expanded(
-                          child: filtered.isEmpty
-                              ? Center(
-                            child: Text(
-                              'No matches for "$_searchQuery"',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                color: RAppColors.textSecondary,
-                              ),
-                            ),
-                          )
-                              : ListView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: filtered.length,
-                            itemBuilder: (_, index) {
-                              final dest = filtered[index];
-                              final path = repo.buildPath(dest);
-                              final isSelected =
-                                  _selectedDestination?.uuid == dest.uuid;
-
-                              return InkWell(
-                                onTap: () => setState(() {
-                                  _selectedDestination = dest;
-                                  _destinationError = null;
-                                }),
-                                child: Container(
-                                  color: isSelected
-                                      ? Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer
-                                      .withOpacity(0.4)
-                                      : null,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: RAppSpacing.md,
-                                    vertical: RAppSpacing.sm,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        isSelected
-                                            ? Icons.radio_button_checked
-                                            : Icons
-                                            .radio_button_unchecked,
-                                        size: 20,
-                                        color: isSelected
-                                            ? Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            : RAppColors.textSecondary,
-                                      ),
-                                      const SizedBox(
-                                        width: RAppSpacing.sm,
-                                      ),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              dest.name,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                fontWeight: isSelected
-                                                    ? FontWeight.w600
-                                                    : null,
-                                              ),
-                                              maxLines: 1,
-                                              overflow:
-                                              TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              path,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                color: RAppColors
-                                                    .textSecondary,
-                                              ),
-                                              maxLines: 1,
-                                              overflow:
-                                              TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: RAppSpacing.lg),
-
-                  // ── Item Details ────────────────────────────────────
-                  Text(
-                    'Item Details',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: RAppSpacing.md),
-
-                  TextFormField(
-                    controller: _nameController,
-                    maxLength: ValidationHelpers.maxItemNameLength,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      labelText: 'Item Name *',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: ValidationHelpers.validateItemName,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-
-                  const SizedBox(height: RAppSpacing.md),
-
-                  TextFormField(
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    maxLength: 500,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: ValidationHelpers.validateDescription,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-
-                  const SizedBox(height: RAppSpacing.md),
-
-                  TextFormField(
-                    controller: _tagsController,
-                    maxLength: 200,
-                    decoration: const InputDecoration(
-                      labelText: 'Tags',
-                      hintText: 'comma, separated, tags',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: ValidationHelpers.validateTags,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-
-                  const SizedBox(height: RAppSpacing.md),
-
-                  // ── Photo ───────────────────────────────────────────
-                  Text(
-                    'Photo',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: RAppSpacing.sm),
-
-                  if (_photoPath != null) ...[
-                    SafeImageWidget(
-                      photoPath: _photoPath,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      borderRadius: BorderRadius.circular(RAppRadius.md),
-                    ),
-                    const SizedBox(height: RAppSpacing.sm),
-                    TextButton.icon(
-                      onPressed: () => setState(() => _photoPath = null),
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      label: const Text('Remove photo'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: RAppColors.error,
-                      ),
-                    ),
-                    const SizedBox(height: RAppSpacing.sm),
-                  ],
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _pickFromGallery,
-                          icon: const Icon(Icons.photo_library),
-                          label: const Text('Gallery'),
-                        ),
-                      ),
-                      const SizedBox(width: RAppSpacing.sm),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _takePhoto,
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Camera'),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: RAppSpacing.sm),
-
-                  // ── Options ─────────────────────────────────────────
-                  SwitchListTile(
-                    value: _isImportant,
-                    title: const Text('Mark as Important'),
-                    secondary: const Icon(Icons.star_outline),
-                    onChanged: (v) => setState(() => _isImportant = v),
-                  ),
-
-                  SwitchListTile(
-                    value: _trackExpiry,
-                    title: const Text('Track Expiry'),
-                    secondary: const Icon(Icons.schedule_outlined),
-                    onChanged: (v) => setState(() {
-                      _trackExpiry = v;
-                      if (!v) _expiryDate = null;
-                    }),
-                  ),
-
-                  if (_trackExpiry)
-                    ListTile(
-                      leading: const Icon(Icons.calendar_today),
-                      title: Text(
-                        _expiryDate == null
-                            ? 'Select Expiry Date'
-                            : _expiryDate.toString().split(' ').first,
-                        style: _expiryDate == null
-                            ? TextStyle(color: RAppColors.textSecondary)
-                            : null,
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2100),
-                          initialDate: _expiryDate ?? DateTime.now(),
-                        );
-                        if (picked != null) {
-                          setState(() => _expiryDate = picked);
-                        }
-                      },
-                    ),
-
-                  const SizedBox(height: RAppSpacing.lg),
-
-                  // ── Save ────────────────────────────────────────────
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _isSaving ? null : _saveItem,
-                      icon: _isSaving
+                      child: state.isSaving
                           ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child:
-                        CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : const Icon(Icons.save),
-                      label: Text(_isSaving ? 'Saving...' : 'Save Item'),
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Save Item'),
                     ),
                   ),
-
-                  const SizedBox(height: RAppSpacing.xl),
                 ],
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectionSection<T>({
+    required String title,
+    required String subtitle,
+    required List<T> items,
+    required String? selectedUuid,
+    required String Function(T) getName,
+    required String Function(T) getUuid,
+    required void Function(String?) onSelected,
+    required VoidCallback onCreateNew,
+    bool isSkipped = false,
+    void Function(bool)? onSkipChanged,
+    String skipLabel = 'None',
+    String? helperText,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: context.titleStyle.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: context.bodyStyle.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
             ),
-          );
-        },
+          ),
+        ],
+        const SizedBox(height: 8),
+        if (items.isEmpty && helperText != null) ...[
+          Text(
+            helperText,
+            style: context.bodyStyle.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ...items.map((item) {
+              final uuid = getUuid(item);
+              final isSel = selectedUuid == uuid && !isSkipped;
+              return ChoiceChip(
+                label: Text(getName(item)),
+                selected: isSel,
+                selectedColor: theme.colorScheme.primaryContainer,
+                onSelected: (selected) {
+                  onSelected(selected ? uuid : null);
+                },
+              );
+            }),
+            if (onSkipChanged != null)
+              ChoiceChip(
+                label: Text(skipLabel),
+                selected: isSkipped,
+                selectedColor: theme.colorScheme.secondaryContainer,
+                onSelected: (selected) {
+                  onSkipChanged(selected);
+                },
+              ),
+            ActionChip(
+              avatar: Icon(Icons.add, size: 16, color: theme.colorScheme.primary),
+              label: Text(
+                'Create New',
+                style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+              ),
+              onPressed: onCreateNew,
+              backgroundColor: isDark ? Colors.grey[900] : const Color(0xFFFFF5F8),
+              side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPathSummaryCard(QuickAddDraft draft) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final repo = ref.read(storageNodeRepositoryProvider);
+    final roomRepo = ref.read(roomRepositoryProvider);
+
+    final roomName = draft.roomUuid != null ? roomRepo.getByUuid(draft.roomUuid!)?.name : null;
+    final locationName = draft.locationUuid != null ? repo.getByUuid(draft.locationUuid!)?.name : null;
+    final sectionName = draft.sectionUuid != null ? repo.getByUuid(draft.sectionUuid!)?.name : null;
+    final containerName = draft.containerUuid != null ? repo.getByUuid(draft.containerUuid!)?.name : null;
+
+    final pathParts = <String>[];
+    if (roomName != null) pathParts.add(roomName);
+    if (locationName != null) pathParts.add(locationName);
+    if (sectionName != null) pathParts.add(sectionName);
+    if (containerName != null) pathParts.add(containerName);
+
+    final isPathEmpty = pathParts.isEmpty;
+    final pathText = isPathEmpty ? 'No location selected' : pathParts.join('  ›  ');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: RAppSpacing.md, vertical: RAppSpacing.sm),
+      decoration: BoxDecoration(
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4) : const Color(0xFFFFF5F8),
+        borderRadius: BorderRadius.circular(RAppRadius.md),
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline.withOpacity(0.2) : const Color(0xFFF8D7E3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isPathEmpty ? Icons.info_outline : Icons.location_on,
+            color: isPathEmpty ? theme.colorScheme.outline : theme.colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              pathText,
+              style: context.bodyStyle.copyWith(
+                fontWeight: isPathEmpty ? FontWeight.normal : FontWeight.w600,
+                color: isPathEmpty ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  bool _isHierarchyValid(QuickAddDraft draft) {
+    return draft.roomUuid != null && draft.locationUuid != null;
+  }
+
+  Future<void> _onSave(QuickAddWizardController controller) async {
+    final success = await controller.saveItem();
+    if (success && mounted) {
+      AppSnackBar.success(context, 'Item saved successfully');
+      Navigator.pop(context);
+    }
+  }
+
+  // Inline creation implementations reusing existing services/dialogs/repositories
+  Future<void> _createRoomInline(QuickAddWizardController controller) async {
+    final roomName = await QuickAddSheet.show(
+      context,
+      title: 'Add Room',
+      hintText: 'e.g. Living Room, Bedroom',
+      labelText: 'Room Name',
+      maxLength: ValidationHelpers.maxRoomNameLength,
+      validator: ValidationHelpers.validateRoomName,
+    );
+
+    if (roomName == null || roomName.trim().isEmpty) return;
+
+    try {
+      final room = RoomEntity(
+        uuid: const Uuid().v4(),
+        placeUuid: _currentPlace.uuid,
+        name: roomName.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      ref.read(roomRepositoryProvider).save(room);
+      ref.read(roomRefreshProvider.notifier).state++;
+      controller.selectRoom(room.uuid);
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add room. Please try again.");
+      }
+    }
+  }
+
+  Future<void> _createLocationInline(QuickAddWizardController controller, String roomUuid) async {
+    final name = await QuickAddSheet.show(
+      context,
+      title: 'Add Storage Location',
+      hintText: 'e.g. Wardrobe, Pantry',
+      labelText: 'Location Name',
+      maxLength: ValidationHelpers.maxRoomNameLength,
+      validator: ValidationHelpers.validateRoomName,
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    try {
+      final node = StorageNodeEntity(
+        uuid: const Uuid().v4(),
+        roomUuid: roomUuid,
+        parentUuid: null,
+        nodeType: NodeType.storageLocation.name,
+        name: name.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      ref.read(storageNodeRepositoryProvider).save(node);
+      ref.read(storageRefreshProvider.notifier).state++;
+      controller.selectLocation(node.uuid);
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add storage location.");
+      }
+    }
+  }
+
+  Future<void> _createSectionInline(
+    QuickAddWizardController controller,
+    String roomUuid,
+    String locationUuid,
+  ) async {
+    final name = await QuickAddSheet.show(
+      context,
+      title: 'Add Section',
+      hintText: 'e.g. Top Shelf, Left Side',
+      labelText: 'Section Name',
+      maxLength: ValidationHelpers.maxRoomNameLength,
+      validator: ValidationHelpers.validateRoomName,
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    try {
+      final node = StorageNodeEntity(
+        uuid: const Uuid().v4(),
+        roomUuid: roomUuid,
+        parentUuid: locationUuid,
+        nodeType: NodeType.section.name,
+        name: name.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      ref.read(storageNodeRepositoryProvider).save(node);
+      ref.read(storageRefreshProvider.notifier).state++;
+      controller.selectSection(node.uuid);
+      setState(() {
+        _skipSection = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add section.");
+      }
+    }
+  }
+
+  Future<void> _createContainerInline(
+    QuickAddWizardController controller,
+    String roomUuid,
+    String parentUuid,
+  ) async {
+    final name = await QuickAddSheet.show(
+      context,
+      title: 'Add Container',
+      hintText: 'e.g. Blue Box, Plastic Pouch',
+      labelText: 'Container Name',
+      maxLength: ValidationHelpers.maxRoomNameLength,
+      validator: ValidationHelpers.validateRoomName,
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    try {
+      final node = StorageNodeEntity(
+        uuid: const Uuid().v4(),
+        roomUuid: roomUuid,
+        parentUuid: parentUuid,
+        nodeType: NodeType.container.name,
+        name: name.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      ref.read(storageNodeRepositoryProvider).save(node);
+      ref.read(storageRefreshProvider.notifier).state++;
+      controller.selectContainer(node.uuid);
+      setState(() {
+        _skipContainer = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add container.");
+      }
+    }
   }
 }

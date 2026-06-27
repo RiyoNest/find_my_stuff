@@ -12,6 +12,7 @@ import 'package:find_my_stuff/features/dashboard/presentation/pages/dashboard_it
 import 'package:find_my_stuff/features/gallery/presentation/pages/photo_gallery_page.dart';
 import 'package:find_my_stuff/features/home/presentation/pages/home_page.dart';
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/quick_add_item_page.dart';
+import 'package:find_my_stuff/features/storage_tree/presentation/models/quick_add_draft.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/archive/presentation/pages/archived_items_page.dart';
@@ -57,7 +58,12 @@ class RAppRouter {
       ),
       GoRoute(
         path: '/quick-add',
-        builder: (context, state) => const QuickAddItemPage(),
+        builder: (context, state) {
+          final extra = state.extra;
+          return QuickAddItemPage(
+            initialDraft: extra is QuickAddDraft ? extra : null,
+          );
+        },
       ),
       GoRoute(
         path: '/dashboard/:type',
