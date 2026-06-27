@@ -110,7 +110,7 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: context.spacingS + 4,
-                      vertical: context.spacingS + 2,
+                      vertical: context.spacingS,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -124,7 +124,6 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                         AutoSizeText(
                           widget.value,
                           style: context.headlineStyle.copyWith(
-                            fontWeight: FontWeight.w900,
                             color: theme.colorScheme.onSurface,
                           ),
                           maxLines: 1,
@@ -135,7 +134,6 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                         AutoSizeText(
                           widget.title,
                           style: context.labelStyle.copyWith(
-                            fontWeight: FontWeight.w700,
                             color: theme.colorScheme.onSurfaceVariant,
                             letterSpacing: 0.5,
                           ),

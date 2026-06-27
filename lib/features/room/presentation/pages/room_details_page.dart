@@ -292,7 +292,6 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                               AutoSizeText(
                                 node.name,
                                 style: context.titleStyle.copyWith(
-                                  fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.onSurface,
                                 ),
                                 maxLines: 1,
@@ -361,7 +360,6 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                   title: Text(
                     node.name,
                     style: context.titleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),

@@ -51,7 +51,6 @@ class ViewOptionsSheet extends ConsumerWidget {
                   maxLines: 1,
                   minFontSize: 14,
                   style: context.titleStyle.copyWith(
-                    fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
@@ -62,7 +61,6 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'View As',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
@@ -116,7 +114,6 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'Sort By',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
@@ -148,7 +145,6 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'Display Filter',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
@@ -180,7 +176,6 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'Preferences (Coming Soon)',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 ),
               ),
@@ -259,7 +254,6 @@ class ViewOptionsSheet extends ConsumerWidget {
                     maxLines: 1,
                     minFontSize: 12,
                     style: context.buttonStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),

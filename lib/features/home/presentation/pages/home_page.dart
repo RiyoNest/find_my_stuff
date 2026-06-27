@@ -152,7 +152,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 padding: context.sheetPadding,
                 child: Text(
                   'Select Parent Location',
-                  style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                  style: context.titleStyle,
                 ),
               ),
               Flexible(
@@ -330,9 +330,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         icon: const Icon(Icons.add_circle_outline_rounded),
                         label: Text(
                           'Quick Add Item',
-                          style: context.buttonStyle.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: context.buttonStyle,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD10047),
@@ -469,7 +467,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             children: [
                               Text(
                                 'Rooms',
-                                style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                                style: context.titleStyle,
                               ),
                               Container(
                                 padding: EdgeInsets.symmetric(
@@ -484,7 +482,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   '${rooms.length} Room(s)',
                                   style: context.labelStyle.copyWith(
                                     color: theme.colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -584,14 +581,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                           'Items Stored',
                                                           style: context.titleStyle.copyWith(
                                                             color: theme.colorScheme.onSurfaceVariant,
-                                                            fontWeight: FontWeight.bold,
                                                           ),
                                                         ),
                                                       ),
                                                       Text(
                                                         '$totalItems',
                                                         style: context.displayStyle.copyWith(
-                                                          fontWeight: FontWeight.w900,
                                                           color: theme.colorScheme.onSurface,
                                                         ),
                                                       ),
@@ -631,7 +626,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                     '${expiring.length} Expiring',
                                                                     style: context.labelStyle.copyWith(
                                                                       color: isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309),
-                                                                      fontWeight: FontWeight.bold,
                                                                     ),
                                                                   ),
                                                                 ],
@@ -669,7 +663,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                     '${expired.length} Expired',
                                                                     style: context.labelStyle.copyWith(
                                                                       color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C),
-                                                                      fontWeight: FontWeight.bold,
                                                                     ),
                                                                   ),
                                                                 ],
@@ -826,7 +819,6 @@ class _AddRoomCard extends StatelessWidget {
                 'Add Room',
                 style: context.labelStyle.copyWith(
                   color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -858,7 +850,7 @@ class _EmptyHomeState extends StatelessWidget {
                 color: theme.colorScheme.outline,
               ),
               SizedBox(height: context.spacingM),
-              Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+              Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.w700)),
               SizedBox(height: context.spacingXS),
               Text(
                 'Add your first room to start organizing\nwhere your things live.',
@@ -871,7 +863,7 @@ class _EmptyHomeState extends StatelessWidget {
                 icon: const Icon(Icons.add),
                 label: Text(
                   'Add Your First Room',
-                  style: context.buttonStyle.copyWith(fontWeight: FontWeight.bold),
+                  style: context.buttonStyle,
                 ),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(120, 48),

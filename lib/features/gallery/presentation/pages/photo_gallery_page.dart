@@ -151,7 +151,6 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
                             AutoSizeText(
                               item.name,
                               style: context.titleStyle.copyWith(
-                                fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onSurface,
                               ),
                               maxLines: 1,

@@ -102,8 +102,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 maxLines: 1,
                 minFontSize: 16,
                 overflow: TextOverflow.ellipsis,
-                style: context.headlineStyle.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: context.titleStyle.copyWith(
                   color: theme.colorScheme.onSurface,
                 ),
               ),
@@ -185,7 +184,6 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                     maxLines: 1,
                     minFontSize: 12,
                     style: context.buttonStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
@@ -235,8 +233,7 @@ class AddChildTypeSheet extends StatelessWidget {
               'Add Contents',
               maxLines: 1,
               minFontSize: 16,
-              style: context.headlineStyle.copyWith(
-                fontWeight: FontWeight.bold,
+              style: context.titleStyle.copyWith(
                 color: theme.colorScheme.onSurface,
               ),
             ),
@@ -310,7 +307,6 @@ class AddChildTypeSheet extends StatelessWidget {
         title: Text(
           title,
           style: context.titleStyle.copyWith(
-            fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),

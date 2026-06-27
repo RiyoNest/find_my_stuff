@@ -146,7 +146,6 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                                       style: context.bodySmallStyle.copyWith(
                                         color: Theme.of(context).colorScheme.onInverseSurface,
                                         fontWeight: FontWeight.w500,
-                                        fontSize: 12,
                                       ),
                                     ),
                                   ),

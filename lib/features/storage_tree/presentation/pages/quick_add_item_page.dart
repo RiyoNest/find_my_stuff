@@ -20,6 +20,7 @@ import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 import 'package:find_my_stuff/core/utils/validation_helpers.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/enums/node_type.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
@@ -27,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
+
 
 class QuickAddItemPage extends ConsumerStatefulWidget {
   const QuickAddItemPage({super.key});
@@ -293,9 +295,8 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                       padding: const EdgeInsets.only(top: RAppSpacing.xs),
                       child: Text(
                         _destinationError!,
-                        style: TextStyle(
+                        style: context.bodySmallStyle.copyWith(
                           color: Theme.of(context).colorScheme.error,
-                          fontSize: 12,
                         ),
                       ),
                     ),

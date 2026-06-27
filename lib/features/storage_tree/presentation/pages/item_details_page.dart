@@ -18,6 +18,7 @@ import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/photo_viewer_page.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_path_provider.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
@@ -477,9 +478,8 @@ class _ExpiryCard extends StatelessWidget {
             ),
             child: Text(
               status,
-              style: theme.textTheme.labelMedium?.copyWith(
+              style: context.labelStyle.copyWith(
                 color: color,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ),

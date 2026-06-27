@@ -12,6 +12,7 @@ import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class ItemsBreakdownChart extends StatelessWidget {
   final Map<String, int> itemsByType;
@@ -185,8 +186,8 @@ class _StatusIndicator extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               count.toString(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: context.bodyStyle.copyWith(
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

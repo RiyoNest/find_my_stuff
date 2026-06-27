@@ -208,7 +208,6 @@ class _ArchivedItemTile extends ConsumerWidget {
                   AutoSizeText(
                     item.name,
                     style: context.titleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,

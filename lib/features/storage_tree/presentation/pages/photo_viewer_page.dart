@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class PhotoViewerPage extends StatelessWidget {
   final String imagePath;
@@ -41,7 +42,7 @@ class PhotoViewerPage extends StatelessWidget {
         elevation: 0,
         title: Text(
           itemName,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: context.subtitleStyle.copyWith(color: Colors.white),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -86,9 +87,9 @@ class PhotoViewerPage extends StatelessWidget {
               color: Colors.white54,
             ),
             const SizedBox(height: RAppSpacing.sm),
-            const Text(
+            Text(
               'Image not found',
-              style: TextStyle(color: Colors.white54, fontSize: 16),
+              style: context.subtitleStyle.copyWith(color: Colors.white54),
             ),
             const SizedBox(height: RAppSpacing.md),
             OutlinedButton(

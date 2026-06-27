@@ -237,7 +237,7 @@ class _StorageNodeDetailsPageState
                       'Add Item',
                       maxLines: 1,
                       minFontSize: 11,
-                      style: context.buttonStyle.copyWith(fontWeight: FontWeight.bold),
+                      style: context.buttonStyle,
                     ),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(120, 48),
@@ -319,7 +319,6 @@ class _StorageNodeDetailsPageState
                                   AutoSizeText(
                                     child.name,
                                     style: context.titleStyle.copyWith(
-                                      fontWeight: FontWeight.bold,
                                       color: theme.colorScheme.onSurface,
                                     ),
                                     maxLines: 1,
@@ -329,9 +328,8 @@ class _StorageNodeDetailsPageState
                                   SizedBox(height: context.spacingXS),
                                   Text(
                                     label,
-                                    style: context.bodySmallStyle.copyWith(
+                                    style: context.labelStyle.copyWith(
                                       color: color,
-                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
@@ -428,7 +426,6 @@ class _ChildNodeCard extends StatelessWidget {
                     AutoSizeText(
                       node.name,
                       style: context.titleStyle.copyWith(
-                        fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
                       maxLines: 1,
