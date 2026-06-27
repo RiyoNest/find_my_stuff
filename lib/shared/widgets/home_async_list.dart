@@ -86,6 +86,7 @@ class HomeAsyncList<T> extends StatelessWidget {
         final visible = items.take(maxItems).toList();
 
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             for (var i = 0; i < visible.length; i++)
               itemBuilder(context, visible[i], i),

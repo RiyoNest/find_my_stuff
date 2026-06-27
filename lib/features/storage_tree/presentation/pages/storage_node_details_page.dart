@@ -1,7 +1,4 @@
-// File: lib/features/storage_tree/presentation/pages/storage_node_details_page.dart
-
 import 'package:find_my_stuff/core/constants/app_colours.dart';
-import 'package:find_my_stuff/core/constants/app_spacing.dart';
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/item_details_page.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/enums/node_type.dart';
@@ -12,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 import '../../../../shared/enums/content_view_mode.dart';
 import '../../../../shared/enums/content_sort_order.dart';
@@ -23,7 +21,7 @@ import '../../../../shared/widgets/quick_add_sheet.dart';
 import '../../../../shared/widgets/content_page_scaffold.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/speed_dial_fab.dart';
-import '../../../../shared/utils/responsive_grid_delegate.dart';
+import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/providers/room_providers.dart';
 
 class StorageNodeDetailsPage extends ConsumerStatefulWidget {
@@ -235,9 +233,14 @@ class _StorageNodeDetailsPageState
                   actionButton: FilledButton.icon(
                     onPressed: () => _addChildNodeWithType(node, NodeType.item),
                     icon: const Icon(Icons.add),
-                    label: const Text('Add Item'),
+                    label: AutoSizeText(
+                      'Add Item',
+                      maxLines: 1,
+                      minFontSize: 11,
+                      style: context.buttonStyle.copyWith(fontWeight: FontWeight.bold),
+                    ),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFD10047),
+                      minimumSize: const Size(120, 48),
                     ),
                   ),
                 );
@@ -255,20 +258,20 @@ class _StorageNodeDetailsPageState
 
               if (prefs.viewMode == ContentViewMode.tree) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: context.spacingM),
                   child: HierarchyTreeView(rootUuid: node.uuid),
                 );
               }
 
               if (prefs.viewMode == ContentViewMode.grid) {
-                final cols = ResponsiveLayout.getColumns(context);
+                final cols = context.columns;
                 return GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: cols,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: ResponsiveLayout.getItemCardAspectRatio(cols),
+                    mainAxisSpacing: context.spacingS + 4,
+                    crossAxisSpacing: context.spacingS + 4,
+                    childAspectRatio: context.itemCardAspectRatio,
                   ),
                   itemCount: processed.length,
                   itemBuilder: (context, index) {
@@ -279,7 +282,7 @@ class _StorageNodeDetailsPageState
                       margin: EdgeInsets.zero,
                       clipBehavior: Clip.antiAlias,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: context.borderRadiusL,
                         side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                       ),
                       elevation: 2,
@@ -301,31 +304,32 @@ class _StorageNodeDetailsPageState
                                     child: Icon(
                                       icon,
                                       color: color,
-                                      size: 32,
+                                      size: context.iconLarge,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(10),
+                              padding: EdgeInsets.all(context.spacingS + 2),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
+                                  AutoSizeText(
                                     child.name,
-                                    style: theme.textTheme.titleSmall?.copyWith(
+                                    style: context.titleStyle.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: theme.colorScheme.onSurface,
                                     ),
                                     maxLines: 1,
+                                    minFontSize: 11,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 2),
+                                  SizedBox(height: context.spacingXS),
                                   Text(
                                     label,
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                                    style: context.bodySmallStyle.copyWith(
                                       color: color,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -343,9 +347,9 @@ class _StorageNodeDetailsPageState
 
               // Default List View
               return ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
                 itemCount: processed.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
                 itemBuilder: (context, index) {
                   final child = processed[index];
                   return _ChildNodeCard(
@@ -387,17 +391,17 @@ class _ChildNodeCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: context.borderRadiusM,
         side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.6),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: context.borderRadiusM,
         hoverColor: const Color(0xFFFFF5F8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: RAppSpacing.md,
-            vertical: RAppSpacing.sm + 4,
+          padding: EdgeInsets.symmetric(
+            horizontal: context.spacingM,
+            vertical: context.spacingS + 4,
           ),
           child: Row(
             children: [
@@ -406,43 +410,44 @@ class _ChildNodeCard extends StatelessWidget {
                 height: 40,
                 child: SafeImageWidget(
                   photoPath: node.photoPath,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: context.borderRadiusS,
                   placeholder: Container(
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: context.borderRadiusS,
                     ),
-                    child: Icon(icon, color: color, size: 20),
+                    child: Icon(icon, color: color, size: context.iconSmall + 4),
                   ),
                 ),
               ),
-              const SizedBox(width: RAppSpacing.sm + 4),
+              SizedBox(width: context.spacingS + 4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AutoSizeText(
                       node.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: context.titleStyle.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
                       maxLines: 1,
+                      minFontSize: 12,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: context.spacingXS),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: RAppSpacing.xs + 2,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.spacingXS + 2,
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: context.borderRadiusS,
                       ),
                       child: Text(
                         label,
-                        style: theme.textTheme.labelMedium?.copyWith(
+                        style: context.labelStyle.copyWith(
                           color: color,
                           fontWeight: FontWeight.w600,
                         ),
@@ -451,7 +456,7 @@ class _ChildNodeCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
+              Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: context.iconMedium),
             ],
           ),
         ),

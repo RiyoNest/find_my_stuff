@@ -4,6 +4,7 @@ import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
 import 'package:find_my_stuff/shared/providers/theme_provider.dart';
@@ -11,10 +12,10 @@ import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
 import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
 import 'package:find_my_stuff/shared/enums/content_view_mode.dart';
 import 'package:find_my_stuff/shared/providers/content_preferences_provider.dart';
-import 'package:find_my_stuff/shared/utils/responsive_grid_delegate.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:find_my_stuff/shared/providers/storage_path_provider.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 import '../widgets/search_result_tile.dart';
 
@@ -78,7 +79,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       initialSearchQuery: query,
       breadcrumbs: segments,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: EdgeInsets.symmetric(horizontal: context.spacingM),
         child: resultsAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(),
@@ -107,7 +108,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         children: [
                           Text(
                             'Recent Searches',
-                            style: theme.textTheme.titleSmall?.copyWith(
+                            style: context.titleStyle.copyWith(
                               color: isDark ? theme.colorScheme.onSurfaceVariant : Colors.grey[600],
                               fontWeight: FontWeight.bold,
                             ),
@@ -124,14 +125,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: context.spacingS),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: context.spacingS,
+                        runSpacing: context.spacingS,
                         children: recentSearches.map((search) {
                           return ActionChip(
-                            label: Text(search),
-                            avatar: const Icon(Icons.history_rounded, size: 16, color: Color(0xFFD10047)),
+                            label: Text(search, style: context.labelStyle),
+                            avatar: Icon(Icons.history_rounded, size: context.iconSmall, color: const Color(0xFFD10047)),
                             backgroundColor: isDark
                                 ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)
                                 : const Color(0xFFFFF5F8),
@@ -163,14 +164,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
             // Grid View rendering
             if (prefs.viewMode == ContentViewMode.grid) {
-              final cols = ResponsiveLayout.getColumns(context);
+              final cols = context.columns;
               return GridView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: context.spacingS),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: cols,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: ResponsiveLayout.getItemCardAspectRatio(cols),
+                  mainAxisSpacing: context.spacingS + 4,
+                  crossAxisSpacing: context.spacingS + 4,
+                  childAspectRatio: context.itemCardAspectRatio,
                 ),
                 itemCount: items.length,
                 itemBuilder: (context, index) {
@@ -190,9 +191,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
             // Default List View rendering
             return ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: context.spacingS),
               itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
               itemBuilder: (context, index) {
                 final item = items[index];
                 return SearchResultTile(
@@ -242,7 +243,7 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
         child: AnimatedPhysicalModel(
           duration: const Duration(milliseconds: 150),
           shape: BoxShape.rectangle,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: context.borderRadiusL,
           elevation: _isHovered ? 4 : 2,
           color: widget.theme.cardColor,
           shadowColor: Colors.black.withOpacity(0.1),
@@ -251,7 +252,7 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
             clipBehavior: Clip.antiAlias,
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: context.borderRadiusL,
               side: BorderSide(
                 color: widget.isDark
                     ? widget.theme.colorScheme.outline.withOpacity(0.3)
@@ -272,18 +273,18 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
                       fit: BoxFit.cover,
                       placeholder: Container(
                         color: const Color(0xFFFFF5F8),
-                        child: const Center(
+                        child: Center(
                           child: Icon(
                             Icons.inventory_2_outlined,
-                            color: Color(0xFFD10047),
-                            size: 32,
+                            color: const Color(0xFFD10047),
+                            size: context.iconLarge,
                           ),
                         ),
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: EdgeInsets.all(context.spacingS + 2),
                     child: Consumer(
                       builder: (context, ref, child) {
                         final pathAsync = ref.watch(storagePathProvider(widget.item.uuid));
@@ -294,25 +295,26 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
                             Row(
                               children: [
                                 Expanded(
-                                  child: Text(
+                                  child: AutoSizeText(
                                     widget.item.name,
-                                    style: widget.theme.textTheme.titleSmall?.copyWith(
+                                    style: context.titleStyle.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: widget.theme.colorScheme.onSurface,
                                     ),
                                     maxLines: 1,
+                                    minFontSize: 11,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 if (widget.item.isImportant)
-                                  const Icon(
+                                  Icon(
                                     Icons.star_rounded,
                                     color: Colors.amber,
-                                    size: 16,
+                                    size: context.iconSmall,
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: context.spacingXS),
                             pathAsync.when(
                               loading: () => const Text('...', style: TextStyle(fontSize: 12)),
                               error: (_, __) => const SizedBox(),
@@ -320,7 +322,7 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
                                 final text = path.map((e) => e.name).join(' > ');
                                 return Text(
                                   text.isNotEmpty ? text : 'No location path',
-                                  style: widget.theme.textTheme.bodySmall?.copyWith(
+                                  style: context.bodySmallStyle.copyWith(
                                     color: widget.theme.colorScheme.onSurfaceVariant,
                                   ),
                                   maxLines: 1,

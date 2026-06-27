@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 import '../../../../core/constants/app_colours.dart';
 import '../../../../shared/enums/node_type.dart';
@@ -21,7 +22,7 @@ import '../../../../shared/widgets/content_page_scaffold.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/speed_dial_fab.dart';
 import '../../../../shared/widgets/safe_image_widget.dart';
-import '../../../../shared/utils/responsive_grid_delegate.dart';
+import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../core/utils/validation_helpers.dart';
 import '../../../../shared/widgets/custom_snackbar.dart';
 
@@ -230,20 +231,20 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
 
           if (prefs.viewMode == ContentViewMode.tree) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: context.spacingM),
               child: HierarchyTreeView(rootUuid: widget.roomUuid),
             );
           }
 
           if (prefs.viewMode == ContentViewMode.grid) {
-            final cols = ResponsiveLayout.getColumns(context);
+            final cols = context.columns;
             return GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: cols,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: ResponsiveLayout.getItemCardAspectRatio(cols),
+                mainAxisSpacing: context.spacingS + 4,
+                crossAxisSpacing: context.spacingS + 4,
+                childAspectRatio: context.itemCardAspectRatio,
               ),
               itemCount: processed.length,
               itemBuilder: (context, index) {
@@ -252,7 +253,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                   margin: EdgeInsets.zero,
                   clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: context.borderRadiusL,
                     side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                   ),
                   elevation: 2,
@@ -275,7 +276,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                                   node.nodeType == NodeType.container.name
                                       ? Icons.inventory_2_outlined
                                       : Icons.meeting_room_outlined,
-                                  size: 32,
+                                  size: context.iconLarge,
                                   color: const Color(0xFFD10047),
                                 ),
                               ),
@@ -283,26 +284,27 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.all(10),
+                          padding: EdgeInsets.all(context.spacingS + 2),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
+                              AutoSizeText(
                                 node.name,
-                                style: theme.textTheme.titleSmall?.copyWith(
+                                style: context.titleStyle.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.onSurface,
                                 ),
                                 maxLines: 1,
+                                minFontSize: 11,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: context.spacingXS),
                               Text(
                                 node.nodeType == 'storageLocation'
                                     ? 'Location'
                                     : node.nodeType[0].toUpperCase() + node.nodeType.substring(1),
-                                style: theme.textTheme.bodySmall?.copyWith(
+                                style: context.bodySmallStyle.copyWith(
                                   color: RAppColors.textSecondary,
                                 ),
                               ),
@@ -319,46 +321,46 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
 
           // Default List View
           return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
             itemCount: processed.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
             itemBuilder: (context, index) {
               final node = processed[index];
               return Card(
                 margin: EdgeInsets.zero,
                 elevation: 1,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: context.borderRadiusM,
                   side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.6),
                 ),
                 child: ListTile(
                   onTap: () => context.push('/node/${node.uuid}'),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: context.borderRadiusM),
                   hoverColor: const Color(0xFFFFF5F8),
                   leading: SizedBox(
                     width: 40,
                     height: 40,
                     child: SafeImageWidget(
                       photoPath: node.photoPath,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: context.borderRadiusS,
                       placeholder: Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF5F8),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: context.borderRadiusS,
                         ),
                         child: Icon(
                           node.nodeType == 'storageLocation'
                               ? Icons.meeting_room_outlined
                               : Icons.inventory_2_outlined,
                           color: const Color(0xFFD10047),
-                          size: 20,
+                          size: context.iconSmall + 4,
                         ),
                       ),
                     ),
                   ),
                   title: Text(
                     node.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: context.titleStyle.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
@@ -367,13 +369,14 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                     node.nodeType == 'storageLocation'
                         ? 'Location'
                         : node.nodeType[0].toUpperCase() + node.nodeType.substring(1),
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: context.bodyMediumStyle.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   trailing: Icon(
                     Icons.chevron_right_rounded,
                     color: Colors.grey[400],
+                    size: context.iconMedium,
                   ),
                 ),
               );
