@@ -3,6 +3,8 @@ import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class ItemActivityTile extends ConsumerStatefulWidget {
   final StorageNodeEntity item;
@@ -49,10 +51,10 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
           child: Tooltip(
             message: 'View details for ${widget.item.name}',
             child: Card(
-              margin: const EdgeInsets.symmetric(vertical: 6),
+              margin: EdgeInsets.symmetric(vertical: context.spacingXS),
               elevation: _isHovered ? 4 : 1,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: context.borderRadiusL,
                 side: BorderSide(
                   color: isDark 
                       ? theme.colorScheme.outline.withOpacity(0.2) 
@@ -62,11 +64,11 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
               ),
               child: InkWell(
                 onTap: () => context.push('/node/${widget.item.uuid}'),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: context.borderRadiusL,
                 hoverColor: const Color(0xFFD10047).withOpacity(0.02),
                 splashColor: const Color(0xFFD10047).withOpacity(0.08),
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: context.cardPadding,
                   child: Row(
                     children: [
                       Container(
@@ -74,41 +76,47 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                         height: 48,
                         decoration: BoxDecoration(
                           color: const Color(0xFFD10047).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: context.borderRadiusM,
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Icon(
                             Icons.inventory_2_outlined,
-                            color: Color(0xFFD10047),
-                            size: 22,
+                            color: const Color(0xFFD10047),
+                            size: context.iconMedium,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: context.spacingM),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            AutoSizeText(
                               widget.item.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
+                              maxLines: 1,
+                              minFontSize: 12,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.titleStyle.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onSurface,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: context.spacingXS),
                             Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
+                              spacing: context.spacingS,
+                              runSpacing: context.spacingXS,
                               children: [
                                 if (path.isNotEmpty)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: context.spacingS,
+                                      vertical: context.spacingXS,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: isDark 
                                           ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5) 
                                           : const Color(0xFFFFF5F8),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: context.borderRadiusS,
                                       border: Border.all(
                                         color: isDark 
                                             ? theme.colorScheme.outline.withOpacity(0.1) 
@@ -118,7 +126,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                     ),
                                     child: Text(
                                       path,
-                                      style: theme.textTheme.bodySmall?.copyWith(
+                                      style: context.bodySmallStyle.copyWith(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                         color: isDark ? theme.colorScheme.onSurface : const Color(0xFF374151),
@@ -126,12 +134,15 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                     ),
                                   ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: context.spacingS,
+                                    vertical: context.spacingXS,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: isDark 
                                         ? theme.colorScheme.surfaceContainer.withOpacity(0.8) 
                                         : const Color(0xFFECEFF1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: context.borderRadiusS,
                                     border: Border.all(
                                       color: isDark ? theme.colorScheme.outline.withOpacity(0.1) : const Color(0xFFCFD8DC),
                                       width: 0.8,
@@ -139,7 +150,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                   ),
                                   child: Text(
                                     _getTimeAgo(widget.item.viewedAt),
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                                    style: context.bodySmallStyle.copyWith(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                       color: theme.colorScheme.onSurfaceVariant,
@@ -154,6 +165,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                       Icon(
                         Icons.chevron_right_rounded,
                         color: theme.colorScheme.onSurfaceVariant,
+                        size: context.iconMedium,
                       ),
                     ],
                   ),

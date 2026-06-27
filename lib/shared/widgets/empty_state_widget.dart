@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_spacing.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class EmptyStateWidget extends StatelessWidget {
   final IconData icon;
@@ -21,13 +21,13 @@ class EmptyStateWidget extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(RAppSpacing.xl),
+        padding: context.pagePadding,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(RAppSpacing.md + 4),
+              padding: EdgeInsets.all(context.spacingM + 4),
               decoration: BoxDecoration(
                 color: theme.brightness == Brightness.dark
                     ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
@@ -42,29 +42,29 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                size: 48,
+                size: context.iconXL,
                 color: const Color(0xFFD10047),
               ),
             ),
-            const SizedBox(height: RAppSpacing.md + 4),
+            SizedBox(height: context.spacingM + 4),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: context.titleStyle.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: RAppSpacing.xs + 2),
+            SizedBox(height: context.spacingXS),
             Text(
               description,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: context.bodyStyle.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (actionButton != null) ...[
-              const SizedBox(height: RAppSpacing.lg),
+              SizedBox(height: context.spacingL),
               actionButton!,
             ],
           ],
