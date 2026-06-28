@@ -37,12 +37,13 @@ class PhotoViewerPage extends StatelessWidget {
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
         foregroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(
           itemName,
-          style: context.subtitleStyle.copyWith(color: Colors.white),
+          style: context.titleStyle.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

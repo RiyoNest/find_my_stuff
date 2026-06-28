@@ -8,10 +8,12 @@ import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class ItemActivityTile extends ConsumerStatefulWidget {
   final StorageNodeEntity item;
+  final String? customTimeText;
 
   const ItemActivityTile({
     super.key,
     required this.item,
+    this.customTimeText,
   });
 
   @override
@@ -147,7 +149,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                     ),
                                   ),
                                   child: Text(
-                                    _getTimeAgo(widget.item.viewedAt),
+                                    widget.customTimeText ?? _getTimeAgo(widget.item.viewedAt),
                                     style: context.captionStyle.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: theme.colorScheme.onSurfaceVariant,

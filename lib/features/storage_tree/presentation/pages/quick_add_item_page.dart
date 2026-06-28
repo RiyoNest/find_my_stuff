@@ -22,6 +22,7 @@ import '../../../../shared/widgets/quick_add_sheet.dart';
 import '../../../../shared/widgets/safe_image_widget.dart';
 import '../controllers/quick_add_wizard_controller.dart';
 import '../models/quick_add_draft.dart';
+import '../../../../core/services/suggestion_service.dart';
 
 class QuickAddItemPage extends ConsumerStatefulWidget {
   final QuickAddDraft? initialDraft;
@@ -47,6 +48,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   // Local navigation helper to track if sections/containers are skipped
   bool _skipSection = false;
   bool _skipContainer = false;
+  bool _hasManuallyEditedPath = false;
 
   @override
   void initState() {
@@ -117,6 +119,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(quickAddWizardProvider(widget.initialDraft));
     final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+    final theme = Theme.of(context);
 
     // Listens to validation errors and triggers snackbar
     ref.listen<QuickAddWizardState>(quickAddWizardProvider(widget.initialDraft), (previous, next) {
@@ -137,17 +140,22 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
       appBar: AppBar(
         title: Text(
           state.step == QuickAddWizardStep.itemDetails ? 'Add Item' : 'Select Location',
+          style: context.titleStyle.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _onBackPress(state, controller),
         ),
+        scrolledUnderElevation: 0,
       ),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(RAppSpacing.md),
+              padding: EdgeInsets.all(context.spacingM),
               child: _buildStepTracker(state.step),
             ),
             const Divider(height: 1),
@@ -182,8 +190,8 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                 radius: 14,
                 backgroundColor: primaryColor,
                 child: isStep1
-                    ? const Text('1', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))
-                    : const Icon(Icons.check, color: Colors.white, size: 14),
+                    ? Text('1', style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 12, fontWeight: FontWeight.bold))
+                    : Icon(Icons.check, color: theme.colorScheme.onPrimary, size: 14),
               ),
               const SizedBox(width: 8),
               Text(
@@ -211,7 +219,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                 child: Text(
                   '2',
                   style: TextStyle(
-                    color: isStep1 ? theme.colorScheme.onSurfaceVariant : Colors.white,
+                    color: isStep1 ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -434,6 +442,12 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
     final containers = containersAsync?.value?.where((c) => c.nodeType == NodeType.container.name).toList() ?? [];
     final isContainerSkipped = _skipContainer || containers.isEmpty;
 
+    final suggestionService = ref.watch(suggestionServiceProvider);
+    final suggestions = !_hasManuallyEditedPath && draft.itemName.trim().isNotEmpty
+        ? suggestionService.getSuggestions(draft.itemName)
+        : <SuggestionPath>[];
+    final frequentlyUsed = suggestionService.getFrequentlyUsedLocations();
+
     return Column(
       children: [
         Expanded(
@@ -449,6 +463,16 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                   style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: RAppSpacing.lg),
+
+                if (!_hasManuallyEditedPath && suggestions.isNotEmpty) ...[
+                  _buildSuggestionsSection(suggestions, controller),
+                  const SizedBox(height: RAppSpacing.lg),
+                ],
+
+                if (frequentlyUsed.isNotEmpty) ...[
+                  _buildFrequentlyUsedSection(frequentlyUsed, controller),
+                  const SizedBox(height: RAppSpacing.lg),
+                ],
 
                 // ─── ROOM SELECTION ───
                 roomsAsync.when(
@@ -466,6 +490,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                       setState(() {
                         _skipSection = false;
                         _skipContainer = false;
+                        _hasManuallyEditedPath = true;
                       });
                     },
                     onCreateNew: () => _createRoomInline(controller),
@@ -491,6 +516,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                             setState(() {
                               _skipSection = false;
                               _skipContainer = false;
+                              _hasManuallyEditedPath = true;
                             });
                           },
                           onCreateNew: () => _createLocationInline(controller, draft.roomUuid!),
@@ -530,6 +556,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                         setState(() {
                           _skipSection = false;
                           _skipContainer = false;
+                          _hasManuallyEditedPath = true;
                         });
                       },
                       onCreateNew: () => _createSectionInline(controller, draft.roomUuid!, draft.locationUuid!),
@@ -566,6 +593,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                         controller.selectContainer(uuid);
                         setState(() {
                           _skipContainer = false;
+                          _hasManuallyEditedPath = true;
                         });
                       },
                       onCreateNew: () => _createContainerInline(
@@ -926,5 +954,183 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
         AppSnackBar.error(context, "Couldn't add container.");
       }
     }
+  }
+
+  Widget _buildSuggestionsSection(List<SuggestionPath> suggestions, QuickAddWizardController controller) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 1,
+      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: context.borderRadiusM,
+        side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(context.spacingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lightbulb_outline, color: theme.colorScheme.primary, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Intelligent Suggestions',
+                  style: context.titleStyle.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...suggestions.map((s) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6.0),
+                child: InkWell(
+                  borderRadius: context.borderRadiusS,
+                  onTap: () {
+                    controller.updateDraft(ref.read(quickAddWizardProvider(widget.initialDraft)).draft.copyWith(
+                      roomUuid: s.room.uuid,
+                      locationUuid: s.location?.uuid,
+                      sectionUuid: s.section?.uuid,
+                      containerUuid: s.container?.uuid,
+                    ));
+                    setState(() {
+                      _hasManuallyEditedPath = false;
+                    });
+                    AppSnackBar.success(context, 'Location set: ${s.displayString}');
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(context.spacingS),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      borderRadius: context.borderRadiusS,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s.displayString,
+                                style: context.bodyStyle.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              if (s.reason.isNotEmpty)
+                                Text(
+                                  s.reason,
+                                  style: context.captionStyle.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: context.borderRadiusS,
+                          ),
+                          child: Text(
+                            s.label,
+                            style: context.captionStyle.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFrequentlyUsedSection(List<SuggestionPath> paths, QuickAddWizardController controller) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: context.borderRadiusM,
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(context.spacingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.star_outline_rounded, color: theme.colorScheme.onSurfaceVariant, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Frequently Used Locations',
+                  style: context.titleStyle.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...paths.map((s) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6.0),
+                child: InkWell(
+                  borderRadius: context.borderRadiusS,
+                  onTap: () {
+                    controller.updateDraft(ref.read(quickAddWizardProvider(widget.initialDraft)).draft.copyWith(
+                      roomUuid: s.room.uuid,
+                      locationUuid: s.location?.uuid,
+                      sectionUuid: s.section?.uuid,
+                      containerUuid: s.container?.uuid,
+                    ));
+                    setState(() {
+                      _hasManuallyEditedPath = false;
+                    });
+                    AppSnackBar.success(context, 'Location set: ${s.displayString}');
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLow,
+                      borderRadius: context.borderRadiusS,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.arrow_right_alt_rounded, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            s.displayString,
+                            style: context.bodyStyle.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
   }
 }

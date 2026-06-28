@@ -25,6 +25,8 @@ import '../../../../shared/widgets/safe_image_widget.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../core/utils/validation_helpers.dart';
 import '../../../../shared/widgets/custom_snackbar.dart';
+import '../../../../shared/widgets/loading_state_widget.dart';
+import '../../../../shared/widgets/error_state_widget.dart';
 
 class RoomDetailsPage extends ConsumerWidget {
   final String roomUuid;
@@ -40,15 +42,24 @@ class RoomDetailsPage extends ConsumerWidget {
 
     return roomAsync.when(
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: LoadingStateWidget(type: LoadingType.list),
       ),
       error: (e, _) => Scaffold(
-        body: Center(child: Text(e.toString())),
+        body: ErrorStateWidget(
+          description: "We couldn't load this room.",
+          onRetry: () => ref.invalidate(roomDetailsProvider(roomUuid)),
+        ),
       ),
       data: (room) {
         if (room == null) {
-          return const Scaffold(
-            body: Center(child: Text('Room not found')),
+          return Scaffold(
+            body: ErrorStateWidget(
+              description: 'Room not found',
+              secondaryAction: TextButton(
+                onPressed: () => context.pop(),
+                child: const Text('Go Back'),
+              ),
+            ),
           );
         }
 

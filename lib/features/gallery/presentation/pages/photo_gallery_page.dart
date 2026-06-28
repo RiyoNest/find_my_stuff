@@ -11,6 +11,8 @@ import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
 import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
 import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
+import 'package:find_my_stuff/shared/widgets/loading_state_widget.dart';
+import 'package:find_my_stuff/shared/widgets/error_state_widget.dart';
 
 class PhotoGalleryPage extends ConsumerStatefulWidget {
   const PhotoGalleryPage({super.key});
@@ -51,8 +53,11 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
       initialSearchQuery: _searchQuery,
       breadcrumbs: segments,
       child: itemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(err.toString())),
+        loading: () => const LoadingStateWidget(type: LoadingType.grid),
+        error: (err, _) => ErrorStateWidget(
+          description: "We couldn't retrieve your photos.",
+          onRetry: () => ref.invalidate(itemsWithPhotosProvider),
+        ),
         data: (items) {
           if (items.isEmpty) {
             return const EmptyStateWidget(
