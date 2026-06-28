@@ -160,7 +160,7 @@ class QuickAddWizardController extends StateNotifier<QuickAddWizardState> {
       return false;
     }
     if (draft.locationUuid == null) {
-      state = state.copyWith(errorMessage: 'Please select a Storage Location');
+      state = state.copyWith(errorMessage: 'Please select a Location');
       return false;
     }
 

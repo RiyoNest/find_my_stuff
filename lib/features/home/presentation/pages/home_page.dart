@@ -50,19 +50,19 @@ import 'package:find_my_stuff/shared/repositories/place_repository.dart';
 import 'package:find_my_stuff/shared/widgets/animation_helpers.dart';
 import 'package:find_my_stuff/shared/widgets/app_drawer.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
-import 'package:find_my_stuff/shared/widgets/dashboard_charts.dart';
 import 'package:find_my_stuff/shared/widgets/dashboard_stat_card.dart';
 import 'package:find_my_stuff/shared/widgets/expiry_alert_banner.dart';
 import 'package:find_my_stuff/shared/widgets/home_async_list.dart';
 import 'package:find_my_stuff/shared/widgets/item_activity_tile.dart';
 import 'package:find_my_stuff/shared/widgets/room_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 
-enum _ActivityFilter { recent, important, forgotten }
+enum _ActivityFilter { recent, forgotten }
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -78,6 +78,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   late PlaceEntity currentPlace;
 
   _ActivityFilter _activityFilter = _ActivityFilter.recent;
+  final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
 
   @override
   void initState() {
@@ -118,6 +119,91 @@ class _HomePageState extends ConsumerState<HomePage> {
     } catch (e) {
       if (mounted) {
         AppSnackBar.error(context, "Couldn't add room. Please try again.");
+      }
+    }
+  }
+
+  Future<void> _addLocationFromHome() async {
+    final rooms = ref.read(roomListProvider(currentPlace.uuid)).value ?? [];
+    if (rooms.isEmpty) {
+      if (mounted) {
+        AppSnackBar.error(context, "Please create a room first.");
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final RoomEntity? selectedRoom = await showModalBottomSheet<RoomEntity>(
+      context: context,
+      showDragHandle: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(context.radiusL)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: context.sheetPadding,
+                child: Text(
+                  'Select Room',
+                  style: context.titleStyle,
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: rooms.length,
+                  itemBuilder: (context, index) {
+                    final room = rooms[index];
+                    return ListTile(
+                      leading: const Icon(Icons.meeting_room_rounded),
+                      title: Text(room.name),
+                      onTap: () => Navigator.pop(context, room),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selectedRoom == null) return;
+    if (!mounted) return;
+
+    final name = await QuickAddSheet.show(
+      context,
+      title: 'Add Location',
+      hintText: 'e.g. Wardrobe, Pantry',
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    try {
+      final node = StorageNodeEntity(
+        uuid: const Uuid().v4(),
+        roomUuid: selectedRoom.uuid,
+        parentUuid: null,
+        nodeType: NodeType.storageLocation.name,
+        name: name.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final repo = ref.read(storageNodeRepositoryProvider);
+      repo.save(node);
+      ref.read(storageRefreshProvider.notifier).state++;
+
+      if (mounted) {
+        AppSnackBar.success(context, '"$name" added');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add Location. Please try again.");
       }
     }
   }
@@ -240,7 +326,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     final roomsAsync = ref.watch(roomListProvider(currentPlace.uuid));
     final recentAsync = ref.watch(recentlyViewedProvider);
     final forgottenAsync = ref.watch(forgottenItemsProvider);
-    final importantAsync = ref.watch(importantItemsProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final expiringAsync = ref.watch(expiringItemsProvider);
     final expiredAsync = ref.watch(expiredItemsProvider);
@@ -249,41 +334,79 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       drawer: const AppDrawer(),
-      floatingActionButton: SpeedDialFAB(
-        tooltip: 'Add Options',
-        items: [
-          SpeedDialItem(
-            icon: Icons.meeting_room_rounded,
-            label: 'Add Room',
-            onTap: _addRoom,
-          ),
-          SpeedDialItem(
-            icon: Icons.view_agenda_outlined,
-            label: 'Add Section',
-            onTap: () => _addChildFromHome(NodeType.section),
-          ),
-          SpeedDialItem(
-            icon: Icons.inventory_2_outlined,
-            label: 'Add Container',
-            onTap: () => _addChildFromHome(NodeType.container),
-          ),
-          SpeedDialItem(
-            icon: Icons.label_outline,
-            label: 'Add Item',
-            onTap: _addItem,
-          ),
-        ],
+      floatingActionButton: ValueListenableBuilder<bool>(
+        valueListenable: _isFabExtended,
+        builder: (context, isExtended, child) {
+          return SpeedDialFAB(
+            tooltip: 'Add Options',
+            isExtended: isExtended,
+            items: [
+              SpeedDialItem(
+                icon: Icons.label_outline,
+                label: 'Add Item',
+                onTap: _addItem,
+              ),
+              SpeedDialItem(
+                icon: Icons.meeting_room_rounded,
+                label: 'New Room',
+                onTap: _addRoom,
+              ),
+              SpeedDialItem(
+                icon: Icons.inventory_2_outlined,
+                label: 'New Location',
+                onTap: _addLocationFromHome,
+              ),
+              SpeedDialItem(
+                icon: Icons.view_agenda_outlined,
+                label: 'New Section',
+                onTap: () => _addChildFromHome(NodeType.section),
+              ),
+              SpeedDialItem(
+                icon: Icons.inventory_2_outlined,
+                label: 'New Container',
+                onTap: () => _addChildFromHome(NodeType.container),
+              ),
+            ],
+          );
+        },
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: true,
-              snap: true,
-              title: Text(currentPlace.name),
-            ),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.metrics.pixels <= 50) {
+              if (!_isFabExtended.value) {
+                _isFabExtended.value = true;
+              }
+              return false;
+            }
+            if (notification is UserScrollNotification) {
+              if (notification.direction == ScrollDirection.reverse) {
+                if (_isFabExtended.value) {
+                  _isFabExtended.value = false;
+                }
+              } else if (notification.direction == ScrollDirection.forward) {
+                if (!_isFabExtended.value) {
+                  _isFabExtended.value = true;
+                }
+              }
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                floating: true,
+                snap: true,
+                title: Text(
+                  currentPlace.name,
+                  style: context.titleStyle.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 context.spacingM,
@@ -302,30 +425,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                         hintText: 'Search your stuff...',
                         leading: const Icon(Icons.search),
                         onTap: () => context.push('/search'),
-                      ),
-                    ),
-                  ),
-
-                  // Conditional Quick Add — only shown once a path exists,
-                  // so first-time users learn the hierarchy first.
-                  SizedBox(height: context.spacingS + 4),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      onPressed: _addItem,
-                      icon: const Icon(Icons.add_circle_outline_rounded),
-                      label: Text(
-                        'Add Item',
-                        style: context.buttonStyle,
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD10047),
-                        foregroundColor: Colors.white,
-                        elevation: 3,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: context.borderRadiusPill,
-                        ),
                       ),
                     ),
                   ),
@@ -373,7 +472,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                     data: (rooms) {
-                      if (rooms.isEmpty) {
+                      final stats = statsAsync.value;
+                      final totalItems = stats?['items'] ?? (rooms.isEmpty ? 0 : 1);
+                      if (totalItems == 0) {
                         return _EmptyHomeState(
                           onAddItem: _addItem,
                           onAddRoom: _addRoom,
@@ -540,10 +641,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     data: (expiring) {
                                       final totalItems =
                                           statsAsync.value?['items'] ?? 0;
-                                      final active = (totalItems -
-                                          expired.length -
-                                          expiring.length)
-                                          .clamp(0, totalItems);
 
                                       return Column(
                                         mainAxisSize: MainAxisSize.min,
@@ -666,12 +763,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                               ),
                                             ),
                                           ),
-                                          SizedBox(height: context.spacingM),
-                                          ExpiryStatusChart(
-                                            expired: expired.length,
-                                            expiring: expiring.length,
-                                            active: active,
-                                          ),
                                         ],
                                       );
                                     },
@@ -697,11 +788,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   value: _ActivityFilter.recent,
                                   label: Text('Recent'),
                                   icon: Icon(Icons.history, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: _ActivityFilter.important,
-                                  label: Text('Important'),
-                                  icon: Icon(Icons.star_outline, size: 16),
                                 ),
                                 ButtonSegment(
                                   value: _ActivityFilter.forgotten,
@@ -744,18 +830,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 child: ItemActivityTile(item: item),
                               ),
                             ),
-                          if (_activityFilter == _ActivityFilter.important)
-                            HomeAsyncList(
-                              asyncValue: importantAsync,
-                              emptyMessage: 'No important items yet',
-                              emptyIcon: Icons.star_outline,
-                              onRetry: () =>
-                                  ref.invalidate(importantItemsProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
-                            ),
                           if (_activityFilter == _ActivityFilter.forgotten)
                             HomeAsyncList(
                               asyncValue: forgottenAsync,
@@ -778,8 +852,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _AddRoomCard extends StatelessWidget {

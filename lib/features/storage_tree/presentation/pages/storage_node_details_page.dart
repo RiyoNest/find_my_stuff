@@ -206,12 +206,12 @@ class _StorageNodeDetailsPageState
             items: [
               SpeedDialItem(
                 icon: Icons.view_agenda_outlined,
-                label: 'Add Section',
+                label: 'New Section',
                 onTap: () => _addChildNodeWithType(node, NodeType.section),
               ),
               SpeedDialItem(
                 icon: Icons.inventory_2_outlined,
-                label: 'Add Container',
+                label: 'New Container',
                 onTap: () => _addChildNodeWithType(node, NodeType.container),
               ),
               SpeedDialItem(

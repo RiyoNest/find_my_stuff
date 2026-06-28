@@ -480,7 +480,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                         loading: () => const Center(child: CircularProgressIndicator()),
                         error: (e, _) => Text('Error loading locations: $e'),
                         data: (locations) => _buildSelectionSection<StorageNodeEntity>(
-                          title: 'Storage Location',
+                          title: 'Location',
                           subtitle: 'e.g. Wardrobe, Pantry, Desk',
                           items: locations,
                           selectedUuid: draft.locationUuid,
@@ -494,7 +494,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                             });
                           },
                           onCreateNew: () => _createLocationInline(controller, draft.roomUuid!),
-                          helperText: 'No storage locations yet. Create one to continue.',
+                          helperText: 'No locations yet. Create one to continue.',
                         ),
                       ),
                 ],
@@ -818,7 +818,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   Future<void> _createLocationInline(QuickAddWizardController controller, String roomUuid) async {
     final name = await QuickAddSheet.show(
       context,
-      title: 'Add Storage Location',
+      title: 'Add Location',
       hintText: 'e.g. Wardrobe, Pantry',
       labelText: 'Location Name',
       maxLength: ValidationHelpers.maxRoomNameLength,
@@ -843,7 +843,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
       controller.selectLocation(node.uuid);
     } catch (e) {
       if (mounted) {
-        AppSnackBar.error(context, "Couldn't add storage location.");
+        AppSnackBar.error(context, "Couldn't add location.");
       }
     }
   }
