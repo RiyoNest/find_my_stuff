@@ -209,7 +209,6 @@ class _DashboardItemsPageState extends ConsumerState<DashboardItemsPage> {
                   title: Text(
                     item.name,
                     style: context.titleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
@@ -327,7 +326,6 @@ class _ResponsiveDashboardItemCardState extends State<_ResponsiveDashboardItemCa
                               child: AutoSizeText(
                                 widget.item.name,
                                 style: context.titleStyle.copyWith(
-                                  fontWeight: FontWeight.bold,
                                   color: widget.theme.colorScheme.onSurface,
                                 ),
                                 maxLines: 1,

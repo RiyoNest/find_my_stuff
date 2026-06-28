@@ -110,7 +110,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             'Recent Searches',
                             style: context.titleStyle.copyWith(
                               color: isDark ? theme.colorScheme.onSurfaceVariant : Colors.grey[600],
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           TextButton(
@@ -298,7 +297,6 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
                                   child: AutoSizeText(
                                     widget.item.name,
                                     style: context.titleStyle.copyWith(
-                                      fontWeight: FontWeight.bold,
                                       color: widget.theme.colorScheme.onSurface,
                                     ),
                                     maxLines: 1,
@@ -316,7 +314,7 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
                             ),
                             SizedBox(height: context.spacingXS),
                             pathAsync.when(
-                              loading: () => const Text('...', style: TextStyle(fontSize: 12)),
+                              loading: () => Text('...', style: context.bodySmallStyle),
                               error: (_, __) => const SizedBox(),
                               data: (path) {
                                 final text = path.map((e) => e.name).join(' > ');

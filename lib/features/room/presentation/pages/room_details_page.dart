@@ -81,7 +81,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
   Future<void> _addStorageLocation() async {
     final name = await QuickAddSheet.show(
       context,
-      title: 'Add Storage Location',
+      title: 'Add Location',
       hintText: 'e.g. Wardrobe, Pantry',
       labelText: 'Location Name',
       maxLength: ValidationHelpers.maxRoomNameLength,
@@ -189,7 +189,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
         items: [
           SpeedDialItem(
             icon: Icons.inventory_2_outlined,
-            label: 'Add Location',
+            label: 'New Location',
             onTap: _addStorageLocation,
           ),
           SpeedDialItem(
@@ -292,7 +292,6 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                               AutoSizeText(
                                 node.name,
                                 style: context.titleStyle.copyWith(
-                                  fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.onSurface,
                                 ),
                                 maxLines: 1,
@@ -361,7 +360,6 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                   title: Text(
                     node.name,
                     style: context.titleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),

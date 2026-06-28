@@ -17,7 +17,7 @@ class SettingsPage extends ConsumerWidget {
         shape: RoundedRectangleBorder(
           borderRadius: ctx.borderRadiusL,
         ),
-        title: Text('Replace Existing Data?', style: ctx.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+        title: Text('Replace Existing Data?', style: ctx.titleStyle),
         content: Text(
           'Importing a backup will overwrite your current local database. This action cannot be undone. Do you want to continue?',
           style: ctx.bodyStyle,
@@ -51,7 +51,7 @@ class SettingsPage extends ConsumerWidget {
         children: [
           ListTile(
             leading: Icon(Icons.download, size: context.iconMedium),
-            title: Text('Export Backup', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+            title: Text('Export Backup', style: context.titleStyle),
             subtitle: Text(
               'Save all rooms and items',
               style: context.bodyMediumStyle,
@@ -71,7 +71,7 @@ class SettingsPage extends ConsumerWidget {
           ),
           ListTile(
             leading: Icon(Icons.download, size: context.iconMedium),
-            title: Text('Import Backup', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+            title: Text('Import Backup', style: context.titleStyle),
             subtitle: Text(
               'Restore database from a backup file',
               style: context.bodyMediumStyle,

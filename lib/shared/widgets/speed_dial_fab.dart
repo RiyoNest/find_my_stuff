@@ -18,12 +18,14 @@ class SpeedDialFAB extends StatefulWidget {
   final List<SpeedDialItem> items;
   final IconData mainIcon;
   final String? tooltip;
+  final bool isExtended;
 
   const SpeedDialFAB({
     super.key,
     required this.items,
     this.mainIcon = Icons.add,
     this.tooltip,
+    this.isExtended = false,
   });
 
   @override
@@ -85,10 +87,111 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
     });
   }
 
+  Widget _buildItemRow(SpeedDialItem item, int index) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: context.spacingS),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Option label
+          Card(
+            color: Theme.of(context).colorScheme.inverseSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: context.borderRadiusS,
+            ),
+            elevation: 2,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.spacingS,
+                vertical: context.spacingXS,
+              ),
+              child: Text(
+                item.label,
+                style: context.bodySmallStyle.copyWith(
+                  color: Theme.of(context).colorScheme.onInverseSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: context.spacingS),
+          // Option FAB
+          Semantics(
+            label: item.label,
+            button: true,
+            child: Tooltip(
+              message: item.label,
+              child: FloatingActionButton.small(
+                heroTag: 'sd_fab_$index',
+                onPressed: () {
+                  _close();
+                  item.onTap();
+                },
+                backgroundColor: const Color(0xFFD10047),
+                foregroundColor: Colors.white,
+                child: Icon(item.icon, size: context.iconSmall + 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   OverlayEntry _createOverlayEntry() {
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
+
+    final items = List<SpeedDialItem>.from(widget.items);
+    SpeedDialItem? addItem;
+    final otherItems = <SpeedDialItem>[];
+    for (final item in items) {
+      if (item.label.toLowerCase().contains('item')) {
+        addItem = item;
+      } else {
+        otherItems.add(item);
+      }
+    }
+
+    otherItems.sort((a, b) {
+      int getOrder(String label) {
+        final l = label.toLowerCase();
+        if (l.contains('room')) return 1;
+        if (l.contains('location')) return 2;
+        if (l.contains('section')) return 3;
+        if (l.contains('container')) return 4;
+        return 5;
+      }
+      return getOrder(a.label).compareTo(getOrder(b.label));
+    });
+
+    final dividerWidget = Padding(
+      padding: EdgeInsets.only(
+        right: 8.0,
+        bottom: context.spacingS,
+      ),
+      child: Container(
+        width: 160,
+        height: 1.5,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(1),
+        ),
+      ),
+    );
+
+    final List<Widget> children = [];
+    int index = 0;
+    if (addItem != null) {
+      children.add(_buildItemRow(addItem, index++));
+      if (otherItems.isNotEmpty) {
+        children.add(dividerWidget);
+      }
+    }
+    for (final item in otherItems) {
+      children.add(_buildItemRow(item, index++));
+    }
 
     return OverlayEntry(
       builder: (context) {
@@ -121,59 +224,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: widget.items.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final item = entry.value;
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: context.spacingS),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Option label
-                                 Card(
-                                  color: Theme.of(context).colorScheme.inverseSurface,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: context.borderRadiusS,
-                                  ),
-                                  elevation: 2,
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: context.spacingS,
-                                      vertical: context.spacingXS,
-                                    ),
-                                    child: Text(
-                                      item.label,
-                                      style: context.bodySmallStyle.copyWith(
-                                        color: Theme.of(context).colorScheme.onInverseSurface,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: context.spacingS),
-                                // Option FAB
-                                Semantics(
-                                  label: item.label,
-                                  button: true,
-                                  child: Tooltip(
-                                    message: item.label,
-                                    child: FloatingActionButton.small(
-                                      heroTag: 'sd_fab_$index',
-                                      onPressed: () {
-                                        _close();
-                                        item.onTap();
-                                      },
-                                      backgroundColor: const Color(0xFFD10047),
-                                      foregroundColor: Colors.white,
-                                      child: Icon(item.icon, size: context.iconSmall + 2),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                        children: children,
                       ),
                     ),
                     SizedBox(height: context.spacingS),
@@ -193,13 +244,14 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
     return Semantics(
       label: label,
       button: true,
-      child: FloatingActionButton(
+      child: FloatingActionButton.extended(
+        isExtended: widget.isExtended && !_isOpen,
         heroTag: widget.tooltip ?? 'speed_dial_main',
         onPressed: _toggle,
         backgroundColor: const Color(0xFFD10047),
         foregroundColor: Colors.white,
         tooltip: widget.tooltip,
-        child: AnimatedBuilder(
+        icon: AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
             return Transform.rotate(
@@ -208,6 +260,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
             );
           },
         ),
+        label: const Text('Add Item'),
       ),
     );
   }

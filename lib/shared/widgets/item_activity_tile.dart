@@ -97,7 +97,6 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                               minFontSize: 12,
                               overflow: TextOverflow.ellipsis,
                               style: context.titleStyle.copyWith(
-                                fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onSurface,
                               ),
                             ),
@@ -126,8 +125,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                     ),
                                     child: Text(
                                       path,
-                                      style: context.bodySmallStyle.copyWith(
-                                        fontSize: 10,
+                                      style: context.captionStyle.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: isDark ? theme.colorScheme.onSurface : const Color(0xFF374151),
                                       ),
@@ -150,8 +148,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                   ),
                                   child: Text(
                                     _getTimeAgo(widget.item.viewedAt),
-                                    style: context.bodySmallStyle.copyWith(
-                                      fontSize: 10,
+                                    style: context.captionStyle.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),

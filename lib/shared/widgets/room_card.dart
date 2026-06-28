@@ -148,7 +148,6 @@ class _RoomCardState extends State<RoomCard> {
                           minFontSize: 12,
                           overflow: TextOverflow.ellipsis,
                           style: context.titleStyle.copyWith(
-                            fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
@@ -186,8 +185,6 @@ class _RoomCardState extends State<RoomCard> {
           Text(
             '$count',
             style: context.labelStyle.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 10,
               color: theme.colorScheme.onSurface,
             ),
           ),

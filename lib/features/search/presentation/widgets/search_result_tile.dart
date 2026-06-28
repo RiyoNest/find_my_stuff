@@ -65,7 +65,6 @@ class SearchResultTile extends ConsumerWidget {
         title: Text(
           item.name,
           style: context.titleStyle.copyWith(
-            fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),
