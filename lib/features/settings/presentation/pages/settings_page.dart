@@ -1,11 +1,11 @@
 import 'package:find_my_stuff/core/constants/app_colours.dart';
-import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:find_my_stuff/core/services/backup_service.dart';
 import 'package:find_my_stuff/shared/providers/room_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -15,16 +15,17 @@ class SettingsPage extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
+          borderRadius: ctx.borderRadiusL,
         ),
-        title: const Text('Replace Existing Data?'),
-        content: const Text(
+        title: Text('Replace Existing Data?', style: ctx.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+        content: Text(
           'Importing a backup will overwrite your current local database. This action cannot be undone. Do you want to continue?',
+          style: ctx.bodyStyle,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: ctx.buttonStyle),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -32,7 +33,7 @@ class SettingsPage extends ConsumerWidget {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Import Backup'),
+            child: Text('Import Backup', style: ctx.buttonStyle),
           ),
         ],
       ),
@@ -49,10 +50,11 @@ class SettingsPage extends ConsumerWidget {
       body: ListView(
         children: [
           ListTile(
-            leading: const Icon(Icons.download),
-            title: const Text('Export Backup'),
-            subtitle: const Text(
+            leading: Icon(Icons.download, size: context.iconMedium),
+            title: Text('Export Backup', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+            subtitle: Text(
               'Save all rooms and items',
+              style: context.bodyMediumStyle,
             ),
             onTap: () async {
               try {
@@ -68,8 +70,12 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.download),
-            title: const Text('Import Backup'),
+            leading: Icon(Icons.download, size: context.iconMedium),
+            title: Text('Import Backup', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+            subtitle: Text(
+              'Restore database from a backup file',
+              style: context.bodyMediumStyle,
+            ),
             onTap: () async {
               final confirmed = await _showConfirmImportDialog(context);
               if (!confirmed) return;

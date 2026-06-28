@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../core/constants/app_radius.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class SpeedDialItem {
   final IconData icon;
@@ -125,7 +125,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                           final index = entry.key;
                           final item = entry.value;
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
+                            padding: EdgeInsets.only(bottom: context.spacingS),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -133,25 +133,25 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                                  Card(
                                   color: Theme.of(context).colorScheme.inverseSurface,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(RAppRadius.sm),
+                                    borderRadius: context.borderRadiusS,
                                   ),
                                   elevation: 2,
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: context.spacingS,
+                                      vertical: context.spacingXS,
                                     ),
                                     child: Text(
                                       item.label,
-                                      style: TextStyle(
+                                      style: context.bodySmallStyle.copyWith(
                                         color: Theme.of(context).colorScheme.onInverseSurface,
-                                        fontSize: 13,
                                         fontWeight: FontWeight.w500,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: context.spacingS),
                                 // Option FAB
                                 Semantics(
                                   label: item.label,
@@ -166,7 +166,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                                       },
                                       backgroundColor: const Color(0xFFD10047),
                                       foregroundColor: Colors.white,
-                                      child: Icon(item.icon, size: 18),
+                                      child: Icon(item.icon, size: context.iconSmall + 2),
                                     ),
                                   ),
                                 ),
@@ -176,7 +176,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: context.spacingS),
                   ],
                 ),
               ),

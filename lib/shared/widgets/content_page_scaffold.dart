@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'location_breadcrumb.dart';
 
 class ContentPageScaffold extends StatefulWidget {
@@ -122,16 +124,21 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(widget.title),
+        title: AutoSizeText(
+          widget.title,
+          maxLines: 1,
+          minFontSize: 14,
+          overflow: TextOverflow.ellipsis,
+          style: context.titleStyle.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         actions: widget.appBarActions,
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
-        titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-          color: theme.colorScheme.onSurface,
-          fontWeight: FontWeight.w600,
-        ),
       ),
       floatingActionButton: widget.floatingActionButton,
       body: SafeArea(
@@ -141,7 +148,12 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
             // Search Bar Section
             if (widget.onSearchChanged != null)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                padding: EdgeInsets.fromLTRB(
+                  context.spacingM,
+                  context.spacingS,
+                  context.spacingM,
+                  context.spacingS + 4,
+                ),
                 child: Semantics(
                   label: 'Search bar',
                   textField: true,
@@ -149,13 +161,13 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
                     controller: _searchController,
                     onChanged: widget.onSearchChanged,
                     cursorColor: const Color(0xFFD10047),
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    style: context.bodyStyle.copyWith(
                       color: theme.colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       hintText: widget.searchHintText ?? 'Search...',
-                      hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                      hintStyle: context.bodyStyle.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                       ),
                       prefixIcon: const Icon(
                         Icons.search_rounded,
@@ -194,33 +206,33 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: context.spacingXS),
                         ],
                       ),
                       filled: true,
                       fillColor: isDark
-                          ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)
+                          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
                           : const Color(0xFFFFF5F8),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: context.spacingM,
+                        vertical: context.spacingS + 4,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: context.borderRadiusPill,
                         borderSide: BorderSide(
-                          color: isDark ? theme.colorScheme.outline.withOpacity(0.4) : const Color(0xFFF8D7E3),
+                          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.4) : const Color(0xFFF8D7E3),
                           width: 1,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: context.borderRadiusPill,
                         borderSide: BorderSide(
-                          color: isDark ? theme.colorScheme.outline.withOpacity(0.4) : const Color(0xFFF8D7E3),
+                          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.4) : const Color(0xFFF8D7E3),
                           width: 1,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: context.borderRadiusPill,
                         borderSide: const BorderSide(color: Color(0xFFD10047), width: 1.5),
                       ),
                     ),
@@ -231,7 +243,7 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
             // Visual feedback for listening state
             if (_isListening)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: context.spacingL, vertical: context.spacingXS),
                 child: Row(
                   children: [
                     const Icon(
@@ -239,10 +251,10 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
                       color: Color(0xFFD10047),
                       size: 18,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: context.spacingS),
                     Text(
                       'Listening...',
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      style: context.bodyStyle.copyWith(
                         color: const Color(0xFFD10047),
                         fontWeight: FontWeight.w600,
                       ),
@@ -254,7 +266,7 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
             // Breadcrumb Section
             if (widget.breadcrumbs.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                padding: EdgeInsets.fromLTRB(context.spacingM, 0, context.spacingM, context.spacingS + 4),
                 child: LocationBreadcrumb(segments: widget.breadcrumbs),
               ),
 
