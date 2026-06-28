@@ -213,7 +213,7 @@ class _ArchivedItemTile extends ConsumerWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: RAppColors.accent.withOpacity(0.12),
+                        color: RAppColors.accent.withValues(alpha: 0.12),
                         borderRadius: context.borderRadiusS,
                       ),
                       child: Text(

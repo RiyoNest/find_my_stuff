@@ -193,7 +193,7 @@ class _DashboardItemsPageState extends ConsumerState<DashboardItemsPage> {
           return ListView.separated(
             padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
             itemCount: filtered.length,
-            separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
+            separatorBuilder: (_, _) => SizedBox(height: context.spacingS),
             itemBuilder: (_, index) {
               final item = filtered[index];
               final path = repo.buildPath(item);
@@ -512,7 +512,7 @@ class _ResponsiveDashboardItemCardState extends State<_ResponsiveDashboardItemCa
           borderRadius: context.borderRadiusL,
           elevation: _isHovered ? 4 : 2,
           color: widget.theme.cardColor,
-          shadowColor: Colors.black.withOpacity(0.1),
+          shadowColor: Colors.black.withValues(alpha: 0.1),
           child: Card(
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
@@ -521,7 +521,7 @@ class _ResponsiveDashboardItemCardState extends State<_ResponsiveDashboardItemCa
               borderRadius: context.borderRadiusL,
               side: BorderSide(
                 color: widget.isDark
-                    ? widget.theme.colorScheme.outline.withOpacity(0.3)
+                    ? widget.theme.colorScheme.outline.withValues(alpha: 0.3)
                     : const Color(0xFFF8D7E3),
                 width: 0.8,
               ),

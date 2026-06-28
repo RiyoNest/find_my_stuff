@@ -43,10 +43,10 @@ class BackupService {
       const JsonEncoder.withIndent('  ').convert(backup),
     );
 
-    await Share.shareXFiles(
-      [XFile(file.path)],
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path)],
       text: 'Find My Stuff Backup',
-    );
+    ));
   }
 
   static Map<String, dynamic> _placeToJson(

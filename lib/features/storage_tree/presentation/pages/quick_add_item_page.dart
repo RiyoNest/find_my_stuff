@@ -313,7 +313,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
                             right: 4,
                             child: CircleAvatar(
                               radius: 14,
-                              backgroundColor: Colors.black.withOpacity(0.6),
+                              backgroundColor: Colors.black.withValues(alpha: 0.6),
                               child: IconButton(
                                 icon: const Icon(Icons.close, size: 14, color: Colors.white),
                                 padding: EdgeInsets.zero,
@@ -696,7 +696,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
           Text(
             helperText,
             style: context.bodyStyle.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               fontSize: 13,
               fontStyle: FontStyle.italic,
             ),
@@ -736,7 +736,7 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
               ),
               onPressed: onCreateNew,
               backgroundColor: isDark ? Colors.grey[900] : const Color(0xFFFFF5F8),
-              side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
+              side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
             ),
           ],
         ),
@@ -769,10 +769,10 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: RAppSpacing.md, vertical: RAppSpacing.sm),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4) : const Color(0xFFFFF5F8),
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4) : const Color(0xFFFFF5F8),
         borderRadius: BorderRadius.circular(RAppRadius.md),
         border: Border.all(
-          color: isDark ? theme.colorScheme.outline.withOpacity(0.2) : const Color(0xFFF8D7E3),
+          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.2) : const Color(0xFFF8D7E3),
         ),
       ),
       child: Row(

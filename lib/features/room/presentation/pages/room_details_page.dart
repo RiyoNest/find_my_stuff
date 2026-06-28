@@ -268,7 +268,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                     side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                   ),
                   elevation: 2,
-                  shadowColor: Colors.black.withOpacity(0.1),
+                  shadowColor: Colors.black.withValues(alpha: 0.1),
                   child: InkWell(
                     onTap: () => context.push('/node/${node.uuid}'),
                     hoverColor: const Color(0xFFFFF5F8),
@@ -333,7 +333,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
           return ListView.separated(
             padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
             itemCount: processed.length,
-            separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
+            separatorBuilder: (_, _) => SizedBox(height: context.spacingS),
             itemBuilder: (context, index) {
               final node = processed[index];
               return Card(

@@ -123,7 +123,7 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
                     side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                   ),
                   elevation: 2,
-                  shadowColor: Colors.black.withOpacity(0.08),
+                  shadowColor: Colors.black.withValues(alpha: 0.08),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

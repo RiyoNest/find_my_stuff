@@ -495,7 +495,7 @@ class _MoveNodePageState extends ConsumerState<MoveNodePage> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: searchResults.length,
-                        separatorBuilder: (_, __) => const Divider(),
+                        separatorBuilder: (_, _) => const Divider(),
                         itemBuilder: (_, index) {
                           final dest = searchResults[index];
                           final destPath = repo.buildPath(dest);

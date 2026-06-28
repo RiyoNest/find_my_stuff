@@ -441,10 +441,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                             context.push('/dashboard/expiring'),
                       ),
                       loading: () => const SizedBox(),
-                      error: (_, __) => const SizedBox(),
+                      error: (_, _) => const SizedBox(),
                     ),
                     loading: () => const SizedBox(),
-                    error: (_, __) => const SizedBox(),
+                    error: (_, _) => const SizedBox(),
                   ),
 
                   roomsAsync.when(
@@ -491,7 +491,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               height: 100,
                               child: Center(child: CircularProgressIndicator()),
                             ),
-                            error: (_, __) => const SizedBox(),
+                            error: (_, _) => const SizedBox(),
                             data: (stats) => FadeInScale(
                               duration: const Duration(milliseconds: 350),
                               child: SizedBox(
@@ -581,7 +581,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               itemCount: rooms.length + 1,
-                              separatorBuilder: (_, __) => SizedBox(width: context.spacingS),
+                              separatorBuilder: (_, _) => SizedBox(width: context.spacingS),
                               itemBuilder: (context, index) {
                                 if (index == rooms.length) {
                                   return SizedBox(
@@ -765,10 +765,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       );
                                     },
                                     loading: () => const SizedBox(),
-                                    error: (_, __) => const SizedBox(),
+                                    error: (_, _) => const SizedBox(),
                                   ),
                                   loading: () => const SizedBox(),
-                                  error: (_, __) => const SizedBox(),
+                                  error: (_, _) => const SizedBox(),
                                 ),
                               ),
                             ),

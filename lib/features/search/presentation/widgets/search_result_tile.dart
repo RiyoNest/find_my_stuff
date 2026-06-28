@@ -110,7 +110,7 @@ class SearchResultTile extends ConsumerWidget {
                     // Location Path Breadcrumbs
                     pathAsync.when(
                       loading: () => Text('Loading path...', style: context.bodySmallStyle),
-                      error: (_, __) => const SizedBox(),
+                      error: (_, _) => const SizedBox(),
                       data: (path) {
                         final text = path.map((e) => e.name).join(' › ');
                         return Text(

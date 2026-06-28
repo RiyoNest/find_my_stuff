@@ -54,7 +54,9 @@ class PhotoViewerPage extends StatelessWidget {
               tooltip: 'Share Photo',
               onPressed: () async {
                 final resolved = PhotoStorageService.resolvePath(imagePath);
-                await Share.shareXFiles([XFile(resolved)]);
+                await SharePlus.instance.share(ShareParams(
+                  files: [XFile(resolved)],
+                ));
               },
             ),
           IconButton(

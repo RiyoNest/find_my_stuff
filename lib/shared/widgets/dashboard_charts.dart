@@ -153,7 +153,7 @@ class _StatusIndicator extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(RAppSpacing.sm + 4),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(RAppRadius.sm),
         ),
         child: Column(
@@ -164,7 +164,7 @@ class _StatusIndicator extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
               ),
               child: Center(
                 child: Text(
@@ -243,8 +243,8 @@ class InsightCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(RAppSpacing.md),
         decoration: BoxDecoration(
-          color: accentColor.withOpacity(0.08),
-          border: Border.all(color: accentColor.withOpacity(0.25)),
+          color: accentColor.withValues(alpha: 0.08),
+          border: Border.all(color: accentColor.withValues(alpha: 0.25)),
           borderRadius: BorderRadius.circular(RAppRadius.md),
         ),
         child: Row(
@@ -252,7 +252,7 @@ class InsightCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(RAppSpacing.sm),
               decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.16),
+                color: accentColor.withValues(alpha: 0.16),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: accentColor, size: 20),

@@ -132,7 +132,7 @@ class ItemInfoCard extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: items.length,
-              separatorBuilder: (_, __) => SizedBox(height: context.spacingM),
+              separatorBuilder: (_, _) => SizedBox(height: context.spacingM),
               itemBuilder: (_, index) => items[index],
             ),
           ],

@@ -673,7 +673,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 : ListView.separated(
                     padding: EdgeInsets.symmetric(vertical: context.spacingS),
                     itemCount: resultsAsync.length,
-                    separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
+                    separatorBuilder: (_, _) => SizedBox(height: context.spacingS),
                     itemBuilder: (context, index) {
                       final item = resultsAsync[index];
                       return SearchResultTile(
@@ -813,7 +813,7 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
                             SizedBox(height: context.spacingXS),
                             pathAsync.when(
                               loading: () => Text('...', style: context.bodySmallStyle),
-                              error: (_, __) => const SizedBox(),
+                              error: (_, _) => const SizedBox(),
                               data: (path) {
                                 final text = path.map((e) => e.name).join(' › ');
                                 return Text(
