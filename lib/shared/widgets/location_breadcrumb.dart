@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'view_options_sheet.dart';
 
 class BreadcrumbSegment {
@@ -26,10 +28,10 @@ class LocationBreadcrumb extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: context.borderRadiusL,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
@@ -49,10 +51,10 @@ class LocationBreadcrumb extends StatelessWidget {
                   for (var i = 0; i < segments.length; i++) ...[
                     if (i > 0)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        padding: EdgeInsets.symmetric(horizontal: context.spacingS),
                         child: Icon(
                           Icons.chevron_right_rounded,
-                          size: 16,
+                          size: context.iconSmall,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -66,7 +68,7 @@ class LocationBreadcrumb extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: context.spacingS),
           Semantics(
             label: 'Display settings options',
             button: true,
@@ -77,7 +79,7 @@ class LocationBreadcrumb extends StatelessWidget {
                 shape: const CircleBorder(),
                 clipBehavior: Clip.antiAlias,
                 child: IconButton(
-                  icon: const Icon(Icons.tune_rounded, color: Color(0xFFD10047)),
+                  icon: Icon(Icons.tune_rounded, color: const Color(0xFFD10047), size: context.iconMedium),
                   onPressed: () => ViewOptionsSheet.show(context),
                   hoverColor: const Color(0xFFD10047).withValues(alpha: 0.08),
                 ),
@@ -136,17 +138,22 @@ class _BreadcrumbChipState extends State<_BreadcrumbChip> {
         if (icon != null) ...[
           Icon(
             icon,
-            size: 16,
+            size: context.iconSmall,
             color: textColor,
           ),
-          if (!widget.segment.isHome) const SizedBox(width: 4),
+          if (!widget.segment.isHome) SizedBox(width: context.spacingXS),
         ],
         if (!widget.segment.isHome)
-          Text(
-            widget.segment.label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: textColor,
-              fontWeight: widget.isCurrent ? FontWeight.w600 : FontWeight.w500,
+          Flexible(
+            child: AutoSizeText(
+              widget.segment.label,
+              maxLines: 1,
+              minFontSize: 9,
+              overflow: TextOverflow.ellipsis,
+              style: context.labelStyle.copyWith(
+                color: textColor,
+                fontWeight: widget.isCurrent ? FontWeight.w600 : FontWeight.w500,
+              ),
             ),
           ),
       ],
@@ -154,21 +161,21 @@ class _BreadcrumbChipState extends State<_BreadcrumbChip> {
 
     final baseDecoration = BoxDecoration(
       color: bgColor,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: context.borderRadiusM,
       border: Border.all(color: borderColor),
     );
 
     Widget chipContent;
     if (!canTap) {
       chipContent = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: context.spacingS + 2, vertical: context.spacingS + 4),
         decoration: baseDecoration,
         child: rowContent,
       );
     } else {
       chipContent = Material(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: context.borderRadiusM,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: widget.segment.onTap,
@@ -181,10 +188,10 @@ class _BreadcrumbChipState extends State<_BreadcrumbChip> {
           splashColor: const Color(0xFFD10047).withValues(alpha: 0.12),
           hoverColor: const Color(0xFFFCE4EC).withValues(alpha: isDark ? 0.15 : 1.0),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: context.spacingS + 2, vertical: context.spacingS + 4),
             decoration: BoxDecoration(
               border: Border.all(color: borderColor),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: context.borderRadiusM,
             ),
             child: rowContent,
           ),

@@ -10,6 +10,7 @@
 import 'package:find_my_stuff/core/constants/app_colours.dart';
 import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:flutter/material.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 enum SnackBarType { success, error, warning, info }
 
@@ -25,6 +26,7 @@ class AppSnackBar {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         _buildSnackBar(
+          context: context,
           message: message,
           type: type,
           duration: duration,
@@ -66,6 +68,7 @@ class AppSnackBar {
   }
 
   static SnackBar _buildSnackBar({
+    required BuildContext context,
     required String message,
     required SnackBarType type,
     required Duration duration,
@@ -81,9 +84,8 @@ class AppSnackBar {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
+              style: context.bodyStyle.copyWith(
                 color: foreground,
-                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),

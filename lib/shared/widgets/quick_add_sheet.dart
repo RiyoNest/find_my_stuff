@@ -1,8 +1,6 @@
-// File: lib/shared/widgets/quick_add_sheet.dart
-
 import 'package:flutter/material.dart';
-import '../../core/constants/app_radius.dart';
-import '../../core/constants/app_spacing.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import '../../core/utils/validation_helpers.dart';
 import '../enums/node_type.dart';
 
@@ -34,9 +32,9 @@ class QuickAddSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(RAppRadius.xl),
+          top: Radius.circular(context.radiusL),
         ),
       ),
       builder: (_) => QuickAddSheet(
@@ -89,31 +87,33 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            RAppSpacing.lg,
+          padding: EdgeInsets.fromLTRB(
+            context.spacingL,
             8,
-            RAppSpacing.lg,
-            RAppSpacing.lg,
+            context.spacingL,
+            context.spacingL,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              AutoSizeText(
                 widget.title,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                maxLines: 1,
+                minFontSize: 16,
+                overflow: TextOverflow.ellipsis,
+                style: context.titleStyle.copyWith(
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: RAppSpacing.md + 4),
+              SizedBox(height: context.spacingM + 4),
               TextField(
                 controller: _controller,
                 autofocus: true,
                 textCapitalization: TextCapitalization.words,
                 maxLength: widget.maxLength,
                 cursorColor: const Color(0xFFD10047),
-                style: theme.textTheme.bodyLarge?.copyWith(
+                style: context.bodyStyle.copyWith(
                   color: theme.colorScheme.onSurface,
                 ),
                 decoration: InputDecoration(
@@ -129,30 +129,30 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                         ? theme.colorScheme.error
                         : const Color(0xFFD10047),
                   ),
-                  hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                  hintStyle: context.bodyStyle.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                   filled: true,
                   fillColor: isDark
-                      ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)
+                      ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
                       : const Color(0xFFFFF5F8),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS + 6),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: context.borderRadiusM,
                     borderSide: BorderSide(
-                      color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+                      color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.3) : const Color(0xFFF8D7E3),
                       width: 1,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: context.borderRadiusM,
                     borderSide: BorderSide(
-                      color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+                      color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.3) : const Color(0xFFF8D7E3),
                       width: 1,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: context.borderRadiusM,
                     borderSide: const BorderSide(color: Color(0xFFD10047), width: 1.5),
                   ),
                   errorText: _errorText,
@@ -160,7 +160,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 onChanged: _onChanged,
                 onSubmitted: (_) => _save(),
               ),
-              const SizedBox(height: RAppSpacing.md + 4),
+              SizedBox(height: context.spacingM + 4),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -169,21 +169,22 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                     backgroundColor: const Color(0xFFD10047),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: isDark
-                        ? theme.colorScheme.onSurface.withOpacity(0.12)
+                        ? theme.colorScheme.onSurface.withValues(alpha: 0.12)
                         : Colors.grey[200],
                     disabledForegroundColor: isDark
-                        ? theme.colorScheme.onSurface.withOpacity(0.38)
+                        ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
                         : Colors.grey[500],
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: EdgeInsets.symmetric(vertical: context.spacingS + 6),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: context.borderRadiusM,
                     ),
                   ),
-                  child: const Text(
+                  child: AutoSizeText(
                     'Save',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
+                    maxLines: 1,
+                    minFontSize: 12,
+                    style: context.buttonStyle.copyWith(
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -203,9 +204,9 @@ class AddChildTypeSheet extends StatelessWidget {
     return showModalBottomSheet<NodeType>(
       context: context,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(RAppRadius.xl),
+          top: Radius.circular(context.radiusL),
         ),
       ),
       builder: (_) => const AddChildTypeSheet(),
@@ -218,24 +219,25 @@ class AddChildTypeSheet extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          RAppSpacing.lg,
+        padding: EdgeInsets.fromLTRB(
+          context.spacingL,
           8,
-          RAppSpacing.lg,
-          RAppSpacing.lg,
+          context.spacingL,
+          context.spacingL,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            AutoSizeText(
               'Add Contents',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+              maxLines: 1,
+              minFontSize: 16,
+              style: context.titleStyle.copyWith(
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: RAppSpacing.md),
+            SizedBox(height: context.spacingM),
             _buildTypeOption(
               context,
               icon: Icons.view_agenda_outlined,
@@ -244,7 +246,7 @@ class AddChildTypeSheet extends StatelessWidget {
               subtitle: 'A logical grouping inside a location — e.g. "Top Shelf", "Left Side"',
               onTap: () => Navigator.pop(context, NodeType.section),
             ),
-            const SizedBox(height: RAppSpacing.xs),
+            SizedBox(height: context.spacingXS),
             _buildTypeOption(
               context,
               icon: Icons.inventory_2_outlined,
@@ -253,7 +255,7 @@ class AddChildTypeSheet extends StatelessWidget {
               subtitle: 'A physical container — e.g. "Red Box", "Zip Pouch"',
               onTap: () => Navigator.pop(context, NodeType.container),
             ),
-            const SizedBox(height: RAppSpacing.xs),
+            SizedBox(height: context.spacingXS),
             _buildTypeOption(
               context,
               icon: Icons.label_outline,
@@ -282,36 +284,35 @@ class AddChildTypeSheet extends StatelessWidget {
       margin: EdgeInsets.zero,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: context.borderRadiusM,
         side: BorderSide(
-          color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.3) : const Color(0xFFF8D7E3),
           width: 0.8,
         ),
       ),
       child: ListTile(
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: context.borderRadiusM),
         hoverColor: isDark
-            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
+            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
             : const Color(0xFFFFF5F8),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(context.spacingS),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.12),
+            color: iconColor.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: iconColor, size: 24),
+          child: Icon(icon, color: iconColor, size: context.iconMedium),
         ),
         title: Text(
           title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: context.titleStyle.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: context.bodyStyle.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),

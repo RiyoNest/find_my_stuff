@@ -1,7 +1,7 @@
-import 'package:find_my_stuff/core/constants/app_radius.dart';
-import 'package:find_my_stuff/core/constants/app_spacing.dart';
-import 'package:find_my_stuff/shared/entities/room_entity.dart';
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
+import 'package:find_my_stuff/shared/entities/room_entity.dart';
 
 class RoomCard extends StatefulWidget {
   final RoomEntity room;
@@ -98,11 +98,11 @@ class _RoomCardState extends State<RoomCard> {
             child: Container(
               decoration: BoxDecoration(
                 color: bgColor,
-                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                borderRadius: context.borderRadiusL,
                 border: Border.all(color: borderColor, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
                     blurRadius: _isHovered ? 10 : 5,
                     offset: Offset(0, _isHovered ? 5 : 2),
                   ),
@@ -110,18 +110,15 @@ class _RoomCardState extends State<RoomCard> {
               ),
               child: Material(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                borderRadius: context.borderRadiusL,
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(RAppRadius.lg),
+                  borderRadius: context.borderRadiusL,
                   onTap: widget.onTap,
-                  hoverColor: tintColor.withOpacity(0.04),
-                  splashColor: tintColor.withOpacity(0.1),
+                  hoverColor: tintColor.withValues(alpha: 0.04),
+                  splashColor: tintColor.withValues(alpha: 0.1),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 16,
-                    ),
+                    padding: context.cardPadding,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,26 +128,26 @@ class _RoomCardState extends State<RoomCard> {
                           children: [
                             Text(
                               emoji,
-                              style: const TextStyle(fontSize: 32),
+                              style: TextStyle(fontSize: context.iconLarge),
                             ),
                             // Metadata Chips row
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 _buildBadgeChip(context, '📦', widget.itemCount, isDark, theme),
-                                const SizedBox(width: 4),
+                                SizedBox(width: context.spacingXS),
                                 _buildBadgeChip(context, '🗂', widget.containerCount, isDark, theme),
                               ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: RAppSpacing.md),
-                        Text(
+                        SizedBox(height: context.spacingM),
+                        AutoSizeText(
                           widget.room.name,
                           maxLines: 1,
+                          minFontSize: 12,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: context.titleStyle.copyWith(
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
@@ -168,12 +165,12 @@ class _RoomCardState extends State<RoomCard> {
 
   Widget _buildBadgeChip(BuildContext context, String icon, int count, bool isDark, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: context.spacingXS + 2, vertical: context.spacingXS),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4) : Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(8),
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.8),
+        borderRadius: context.borderRadiusS,
         border: Border.all(
-          color: isDark ? theme.colorScheme.outline.withOpacity(0.2) : const Color(0xFFECEFF1),
+          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.2) : const Color(0xFFECEFF1),
           width: 0.8,
         ),
       ),
@@ -182,14 +179,12 @@ class _RoomCardState extends State<RoomCard> {
         children: [
           Text(
             icon,
-            style: const TextStyle(fontSize: 10),
+            style: TextStyle(fontSize: context.iconSmall - 6),
           ),
-          const SizedBox(width: 2),
+          SizedBox(width: context.spacingXS / 2),
           Text(
             '$count',
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 10,
+            style: context.labelStyle.copyWith(
               color: theme.colorScheme.onSurface,
             ),
           ),

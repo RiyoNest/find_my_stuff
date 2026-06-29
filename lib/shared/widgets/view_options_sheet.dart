@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/app_radius.dart';
-import '../../core/constants/app_spacing.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import '../enums/content_view_mode.dart';
 import '../enums/content_sort_order.dart';
 import '../enums/content_filter.dart';
@@ -17,9 +17,9 @@ class ViewOptionsSheet extends ConsumerWidget {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: theme.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(RAppRadius.xl),
+          top: Radius.circular(context.radiusL),
         ),
       ),
       builder: (_) => const ViewOptionsSheet(),
@@ -35,9 +35,9 @@ class ViewOptionsSheet extends ConsumerWidget {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: RAppSpacing.lg,
-          right: RAppSpacing.lg,
-          bottom: RAppSpacing.lg + MediaQuery.of(context).viewInsets.bottom,
+          left: context.spacingL,
+          right: context.spacingL,
+          bottom: context.spacingL + MediaQuery.of(context).viewInsets.bottom,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -46,25 +46,25 @@ class ViewOptionsSheet extends ConsumerWidget {
             children: [
               // Title
               Center(
-                child: Text(
+                child: AutoSizeText(
                   'Display Options',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  maxLines: 1,
+                  minFontSize: 14,
+                  style: context.titleStyle.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
-              const SizedBox(height: RAppSpacing.md + 4),
+              SizedBox(height: context.spacingM + 4),
 
               // 1. View Mode (SegmentedButton)
               Text(
                 'View As',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: context.subtitleStyle.copyWith(
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: RAppSpacing.sm),
+              SizedBox(height: context.spacingS),
               SizedBox(
                 width: double.infinity,
                 child: SegmentedButton<ContentViewMode>(
@@ -106,93 +106,98 @@ class ViewOptionsSheet extends ConsumerWidget {
                 ),
               ),
 
-              const SizedBox(height: RAppSpacing.lg),
+              SizedBox(height: context.spacingL),
               const Divider(),
-              const SizedBox(height: RAppSpacing.sm),
+              SizedBox(height: context.spacingS),
 
               // 2. Sort Order
               Text(
                 'Sort By',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: context.subtitleStyle.copyWith(
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: RAppSpacing.xs),
-              ...ContentSortOrder.values.map(
-                (order) => RadioListTile<ContentSortOrder>(
-                  value: order,
-                  groupValue: prefs.sortOrder,
-                  title: Text(
-                    order.label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface,
+              SizedBox(height: context.spacingXS),
+              RadioGroup<ContentSortOrder>(
+                groupValue: prefs.sortOrder,
+                onChanged: (v) {
+                  if (v != null) notifier.setSortOrder(v);
+                },
+                child: Column(
+                  children: ContentSortOrder.values.map(
+                    (order) => RadioListTile<ContentSortOrder>(
+                      value: order,
+                      title: Text(
+                        order.label,
+                        style: context.bodyStyle.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      activeColor: const Color(0xFFD10047),
                     ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: const Color(0xFFD10047),
-                  onChanged: (v) {
-                    if (v != null) notifier.setSortOrder(v);
-                  },
+                  ).toList(),
                 ),
               ),
 
-              const SizedBox(height: RAppSpacing.md),
+              SizedBox(height: context.spacingM),
               const Divider(),
-              const SizedBox(height: RAppSpacing.sm),
+              SizedBox(height: context.spacingS),
 
               // 3. Filter Options
               Text(
                 'Display Filter',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: context.subtitleStyle.copyWith(
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: RAppSpacing.xs),
-              ...ContentFilter.values.map(
-                (filter) => RadioListTile<ContentFilter>(
-                  value: filter,
-                  groupValue: prefs.filter,
-                  title: Text(
-                    filter.label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface,
+              SizedBox(height: context.spacingXS),
+              RadioGroup<ContentFilter>(
+                groupValue: prefs.filter,
+                onChanged: (v) {
+                  if (v != null) notifier.setFilter(v);
+                },
+                child: Column(
+                  children: ContentFilter.values.map(
+                    (filter) => RadioListTile<ContentFilter>(
+                      value: filter,
+                      title: Text(
+                        filter.label,
+                        style: context.bodyStyle.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      activeColor: const Color(0xFFD10047),
                     ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: const Color(0xFFD10047),
-                  onChanged: (v) {
-                    if (v != null) notifier.setFilter(v);
-                  },
+                  ).toList(),
                 ),
               ),
 
-              const SizedBox(height: RAppSpacing.md),
+              SizedBox(height: context.spacingM),
               const Divider(),
-              const SizedBox(height: RAppSpacing.sm),
+              SizedBox(height: context.spacingS),
 
               // 4. Preferences (Coming Soon Toggles)
               Text(
                 'Preferences (Coming Soon)',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                style: context.subtitleStyle.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 ),
               ),
-              const SizedBox(height: RAppSpacing.xs),
+              SizedBox(height: context.spacingXS),
               SwitchListTile(
                 value: false,
                 onChanged: null,
                 title: Text(
                   'Show Archived',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
                 ),
                 subtitle: Text(
                   'Include archived containers and items',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                  style: context.bodySmallStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
                 ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -202,11 +207,11 @@ class ViewOptionsSheet extends ConsumerWidget {
                 onChanged: null,
                 title: Text(
                   'Photos Only',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
                 ),
                 subtitle: Text(
                   'Filter to items with photos only',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                  style: context.bodySmallStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
                 ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -216,11 +221,11 @@ class ViewOptionsSheet extends ConsumerWidget {
                 onChanged: null,
                 title: Text(
                   'Expiring Soon',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
                 ),
                 subtitle: Text(
                   'Show items with upcoming expiration dates',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                  style: context.bodySmallStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
                 ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -230,17 +235,17 @@ class ViewOptionsSheet extends ConsumerWidget {
                 onChanged: null,
                 title: Text(
                   'Recently Added',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
                 ),
                 subtitle: Text(
                   'Highlight items created within the last 48 hours',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                  style: context.bodySmallStyle.copyWith(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
                 ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               ),
 
-              const SizedBox(height: RAppSpacing.lg),
+              SizedBox(height: context.spacingL),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -249,10 +254,17 @@ class ViewOptionsSheet extends ConsumerWidget {
                     backgroundColor: const Color(0xFFD10047),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: context.borderRadiusM,
                     ),
                   ),
-                  child: const Text('Done'),
+                  child: AutoSizeText(
+                    'Done',
+                    maxLines: 1,
+                    minFontSize: 12,
+                    style: context.buttonStyle.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],

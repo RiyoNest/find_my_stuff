@@ -113,10 +113,12 @@ class RAppTheme {
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: RAppColors.primary,
+        foregroundColor: colorScheme.onSurface,
         titleTextStyle: RAppTextStyles.titleMedium.copyWith(
-          color: RAppColors.primary,
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
         ),
       ),
 
@@ -260,10 +262,12 @@ class RAppTheme {
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: RAppColors.darkBackground,
-        foregroundColor: RAppColors.primary,
+        foregroundColor: colorScheme.onSurface,
         titleTextStyle: RAppTextStyles.titleMedium.copyWith(
-          color: RAppColors.primary,
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
         ),
       ),
 

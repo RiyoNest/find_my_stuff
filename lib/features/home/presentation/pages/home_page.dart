@@ -35,8 +35,7 @@
 // NOTE: Place-switching UI is intentionally omitted — you said you're
 // holding that feature for the next version.
 
-import 'package:find_my_stuff/core/constants/app_radius.dart';
-import 'package:find_my_stuff/core/constants/app_spacing.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/widgets/quick_add_sheet.dart';
 import 'package:find_my_stuff/shared/widgets/speed_dial_fab.dart';
 import 'package:find_my_stuff/shared/enums/node_type.dart';
@@ -51,19 +50,18 @@ import 'package:find_my_stuff/shared/repositories/place_repository.dart';
 import 'package:find_my_stuff/shared/widgets/animation_helpers.dart';
 import 'package:find_my_stuff/shared/widgets/app_drawer.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
-import 'package:find_my_stuff/shared/widgets/dashboard_charts.dart';
 import 'package:find_my_stuff/shared/widgets/dashboard_stat_card.dart';
 import 'package:find_my_stuff/shared/widgets/expiry_alert_banner.dart';
-import 'package:find_my_stuff/shared/widgets/home_async_list.dart';
 import 'package:find_my_stuff/shared/widgets/item_activity_tile.dart';
 import 'package:find_my_stuff/shared/widgets/room_card.dart';
+import 'package:find_my_stuff/shared/widgets/loading_state_widget.dart';
+import 'package:find_my_stuff/shared/widgets/error_state_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-
-enum _ActivityFilter { recent, important, forgotten }
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -78,7 +76,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   late final List<PlaceEntity> _allPlaces;
   late PlaceEntity currentPlace;
 
-  _ActivityFilter _activityFilter = _ActivityFilter.recent;
+  final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
 
   @override
   void initState() {
@@ -123,6 +121,91 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  Future<void> _addLocationFromHome() async {
+    final rooms = ref.read(roomListProvider(currentPlace.uuid)).value ?? [];
+    if (rooms.isEmpty) {
+      if (mounted) {
+        AppSnackBar.error(context, "Please create a room first.");
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final RoomEntity? selectedRoom = await showModalBottomSheet<RoomEntity>(
+      context: context,
+      showDragHandle: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(context.radiusL)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: context.sheetPadding,
+                child: Text(
+                  'Select Room',
+                  style: context.titleStyle,
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: rooms.length,
+                  itemBuilder: (context, index) {
+                    final room = rooms[index];
+                    return ListTile(
+                      leading: const Icon(Icons.meeting_room_rounded),
+                      title: Text(room.name),
+                      onTap: () => Navigator.pop(context, room),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selectedRoom == null) return;
+    if (!mounted) return;
+
+    final name = await QuickAddSheet.show(
+      context,
+      title: 'Add Location',
+      hintText: 'e.g. Wardrobe, Pantry',
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    try {
+      final node = StorageNodeEntity(
+        uuid: const Uuid().v4(),
+        roomUuid: selectedRoom.uuid,
+        parentUuid: null,
+        nodeType: NodeType.storageLocation.name,
+        name: name.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final repo = ref.read(storageNodeRepositoryProvider);
+      repo.save(node);
+      ref.read(storageRefreshProvider.notifier).state++;
+
+      if (mounted) {
+        AppSnackBar.success(context, '"$name" added');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add Location. Please try again.");
+      }
+    }
+  }
+
   void _addItem() => context.push('/quick-add');
 
   Future<void> _addChildFromHome(NodeType type) async {
@@ -139,8 +222,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     final StorageNodeEntity? parent = await showModalBottomSheet<StorageNodeEntity>(
       context: context,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(RAppRadius.xl)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(context.radiusL)),
       ),
       builder: (context) {
         final repo = ref.read(storageNodeRepositoryProvider);
@@ -149,10 +232,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: context.sheetPadding,
                 child: Text(
                   'Select Parent Location',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: context.titleStyle,
                 ),
               ),
               Flexible(
@@ -241,66 +324,92 @@ class _HomePageState extends ConsumerState<HomePage> {
     final roomsAsync = ref.watch(roomListProvider(currentPlace.uuid));
     final recentAsync = ref.watch(recentlyViewedProvider);
     final forgottenAsync = ref.watch(forgottenItemsProvider);
-    final importantAsync = ref.watch(importantItemsProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final expiringAsync = ref.watch(expiringItemsProvider);
     final expiredAsync = ref.watch(expiredItemsProvider);
-    final destinationsAsync = ref.watch(quickAddDestinationsProvider);
     final archivedAsync = ref.watch(archivedItemsProvider);
-
-    // Fix: whenever any storage write increments storageRefreshProvider,
-    // also re-evaluate quickAddDestinationsProvider so the Quick Add
-    // button appears/disappears immediately on navigating back — not only
-    // on pull-to-refresh or app restart.
-    ref.listen(storageRefreshProvider, (_, __) {
-      ref.invalidate(quickAddDestinationsProvider);
-    });
-
-    final canQuickAdd = destinationsAsync.value?.isNotEmpty ?? false;
     final archivedCount = archivedAsync.value?.length ?? 0;
 
     return Scaffold(
       drawer: const AppDrawer(),
-      floatingActionButton: SpeedDialFAB(
-        tooltip: 'Add Options',
-        items: [
-          SpeedDialItem(
-            icon: Icons.meeting_room_rounded,
-            label: 'Add Room',
-            onTap: _addRoom,
-          ),
-          SpeedDialItem(
-            icon: Icons.view_agenda_outlined,
-            label: 'Add Section',
-            onTap: () => _addChildFromHome(NodeType.section),
-          ),
-          SpeedDialItem(
-            icon: Icons.inventory_2_outlined,
-            label: 'Add Container',
-            onTap: () => _addChildFromHome(NodeType.container),
-          ),
-          SpeedDialItem(
-            icon: Icons.label_outline,
-            label: 'Add Item',
-            onTap: _addItem,
-          ),
-        ],
+      floatingActionButton: ValueListenableBuilder<bool>(
+        valueListenable: _isFabExtended,
+        builder: (context, isExtended, child) {
+          return SpeedDialFAB(
+            tooltip: 'Add Options',
+            isExtended: isExtended,
+            items: [
+              SpeedDialItem(
+                icon: Icons.label_outline,
+                label: 'Add Item',
+                onTap: _addItem,
+              ),
+              SpeedDialItem(
+                icon: Icons.meeting_room_rounded,
+                label: 'New Room',
+                onTap: _addRoom,
+              ),
+              SpeedDialItem(
+                icon: Icons.inventory_2_outlined,
+                label: 'New Location',
+                onTap: _addLocationFromHome,
+              ),
+              SpeedDialItem(
+                icon: Icons.view_agenda_outlined,
+                label: 'New Section',
+                onTap: () => _addChildFromHome(NodeType.section),
+              ),
+              SpeedDialItem(
+                icon: Icons.inventory_2_outlined,
+                label: 'New Container',
+                onTap: () => _addChildFromHome(NodeType.container),
+              ),
+            ],
+          );
+        },
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: true,
-              snap: true,
-              title: Text(currentPlace.name),
-            ),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.metrics.pixels <= 50) {
+              if (!_isFabExtended.value) {
+                _isFabExtended.value = true;
+              }
+              return false;
+            }
+            if (notification is UserScrollNotification) {
+              if (notification.direction == ScrollDirection.reverse) {
+                if (_isFabExtended.value) {
+                  _isFabExtended.value = false;
+                }
+              } else if (notification.direction == ScrollDirection.forward) {
+                if (!_isFabExtended.value) {
+                  _isFabExtended.value = true;
+                }
+              }
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                floating: true,
+                snap: true,
+                title: Text(
+                  currentPlace.name,
+                  style: context.titleStyle.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                RAppSpacing.md,
-                RAppSpacing.sm,
-                RAppSpacing.md,
+              padding: EdgeInsets.fromLTRB(
+                context.spacingM,
+                context.spacingS,
+                context.spacingM,
                 110,
               ),
               sliver: SliverList(
@@ -318,33 +427,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ),
 
-                  // Conditional Quick Add — only shown once a path exists,
-                  // so first-time users learn the hierarchy first.
-                  if (canQuickAdd) ...[
-                    const SizedBox(height: RAppSpacing.sm + 4),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: _addItem,
-                        icon: const Icon(Icons.add_circle_outline_rounded),
-                        label: const Text(
-                          'Quick Add Item',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD10047),
-                          foregroundColor: Colors.white,
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: RAppSpacing.md),
+                  SizedBox(height: context.spacingM),
 
                   // Merged expired + expiring urgency banner.
                   expiredAsync.when(
@@ -358,10 +441,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                             context.push('/dashboard/expiring'),
                       ),
                       loading: () => const SizedBox(),
-                      error: (_, __) => const SizedBox(),
+                      error: (_, _) => const SizedBox(),
                     ),
                     loading: () => const SizedBox(),
-                    error: (_, __) => const SizedBox(),
+                    error: (_, _) => const SizedBox(),
                   ),
 
                   roomsAsync.when(
@@ -370,13 +453,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                       child: Center(child: CircularProgressIndicator()),
                     ),
                     error: (err, _) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: RAppSpacing.lg,
+                      padding: EdgeInsets.symmetric(
+                        vertical: context.spacingL,
                       ),
                       child: Column(
                         children: [
                           Text("Couldn't load rooms: $err"),
-                          const SizedBox(height: RAppSpacing.sm),
+                          SizedBox(height: context.spacingS),
                           TextButton.icon(
                             onPressed: () => ref
                                 .invalidate(roomListProvider(currentPlace.uuid)),
@@ -387,11 +470,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                     data: (rooms) {
-                      if (rooms.isEmpty) {
-                        return _EmptyHomeState(onAddRoom: _addRoom);
+                      final stats = statsAsync.value;
+                      final totalItems = stats?['items'] ?? (rooms.isEmpty ? 0 : 1);
+                      if (totalItems == 0) {
+                        return _EmptyHomeState(
+                          onAddItem: _addItem,
+                          onAddRoom: _addRoom,
+                        );
                       }
 
                       return Column(
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Compact horizontal stats row — a scroll has no
@@ -402,17 +491,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                               height: 100,
                               child: Center(child: CircularProgressIndicator()),
                             ),
-                            error: (_, __) => const SizedBox(),
+                            error: (_, _) => const SizedBox(),
                             data: (stats) => FadeInScale(
                               duration: const Duration(milliseconds: 350),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: IntrinsicHeight(
+                              child: SizedBox(
+                                height: context.dashboardCardHeight,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
                                       SizedBox(
-                                        width: 150,
+                                        width: context.roomCardWidth,
                                         child: DashboardStatCard(
                                           title: 'Items',
                                           value: stats['items'].toString(),
@@ -420,9 +510,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/dashboard/all'),
                                         ),
                                       ),
-                                      const SizedBox(width: RAppSpacing.sm + 4),
+                                      SizedBox(width: context.spacingS + 4),
                                       SizedBox(
-                                        width: 150,
+                                        width: context.roomCardWidth,
                                         child: DashboardStatCard(
                                           title: 'Important',
                                           value: stats['important'].toString(),
@@ -430,9 +520,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/dashboard/important'),
                                         ),
                                       ),
-                                      const SizedBox(width: RAppSpacing.sm + 4),
+                                      SizedBox(width: context.spacingS + 4),
                                       SizedBox(
-                                        width: 150,
+                                        width: context.roomCardWidth,
                                         child: DashboardStatCard(
                                           title: 'Photos',
                                           value: stats['photos'].toString(),
@@ -440,9 +530,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/photos'),
                                         ),
                                       ),
-                                      const SizedBox(width: RAppSpacing.sm + 4),
+                                      SizedBox(width: context.spacingS + 4),
                                       SizedBox(
-                                        width: 150,
+                                        width: context.roomCardWidth,
                                         child: DashboardStatCard(
                                           title: 'Archived',
                                           value: archivedCount.toString(),
@@ -458,42 +548,44 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          const SizedBox(height: RAppSpacing.lg + 4),
+                          SizedBox(height: context.spacingL),
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 'Rooms',
-                                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                style: context.titleStyle,
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.spacingS + 2,
+                                  vertical: context.spacingXS,
+                                ),
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: context.borderRadiusM,
                                 ),
                                 child: Text(
                                   '${rooms.length} Room(s)',
-                                  style: theme.textTheme.labelMedium?.copyWith(
+                                  style: context.labelStyle.copyWith(
                                     color: theme.colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: RAppSpacing.sm + 4),
+                          SizedBox(height: context.spacingS + 4),
                           SizedBox(
-                            height: 115,
+                            height: context.dashboardCardHeight,
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               itemCount: rooms.length + 1,
-                              separatorBuilder: (_, __) => const SizedBox(width: 12),
+                              separatorBuilder: (_, _) => SizedBox(width: context.spacingS),
                               itemBuilder: (context, index) {
                                 if (index == rooms.length) {
                                   return SizedBox(
-                                    width: 165,
+                                    width: context.roomCardWidth,
                                     child: _AddRoomCard(onTap: _addRoom),
                                   );
                                 }
@@ -511,7 +603,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 ).build().count();
 
                                 return SizedBox(
-                                  width: 165,
+                                  width: context.roomCardWidth,
                                   child: RoomCard(
                                     room: room,
                                     itemCount: itemCount,
@@ -523,75 +615,71 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          const SizedBox(height: RAppSpacing.lg + 4),
+                          SizedBox(height: context.spacingL),
 
                           // Insights — collapsed by default so it adds
                           // value without adding permanent scroll length.
                           Container(
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceContainerLow,
-                              borderRadius:
-                              BorderRadius.circular(RAppRadius.lg),
+                              borderRadius: context.borderRadiusL,
                             ),
                             child: AnimatedExpandableSection(
                               title: 'Insights',
                               initiallyExpanded: false,
                               leading: const Icon(Icons.insights_outlined),
                               child: Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 14,
-                                  right: 14,
-                                  bottom: RAppSpacing.md,
+                                padding: EdgeInsets.only(
+                                  left: context.spacingM,
+                                  right: context.spacingM,
+                                  bottom: context.spacingM,
                                 ),
                                 child: expiredAsync.when(
                                   data: (expired) => expiringAsync.when(
                                     data: (expiring) {
                                       final totalItems =
                                           statsAsync.value?['items'] ?? 0;
-                                      final active = (totalItems -
-                                          expired.length -
-                                          expiring.length)
-                                          .clamp(0, totalItems);
 
                                       return Column(
+                                        mainAxisSize: MainAxisSize.min,
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Card(
                                             elevation: 1,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(16),
+                                              borderRadius: context.borderRadiusL,
                                               side: BorderSide(
                                                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                                               ),
                                             ),
                                             child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                              padding: context.cardPadding,
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
                                                   Row(
                                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                     children: [
-                                                      Text(
-                                                        'Items Stored',
-                                                        style: theme.textTheme.titleMedium?.copyWith(
-                                                          color: theme.colorScheme.onSurfaceVariant,
-                                                          fontWeight: FontWeight.bold,
+                                                      Expanded(
+                                                        child: Text(
+                                                          'Items Stored',
+                                                          style: context.titleStyle.copyWith(
+                                                            color: theme.colorScheme.onSurfaceVariant,
+                                                          ),
                                                         ),
                                                       ),
                                                       Text(
                                                         '$totalItems',
-                                                        style: theme.textTheme.titleLarge?.copyWith(
-                                                          fontWeight: FontWeight.w900,
+                                                        style: context.displayStyle.copyWith(
                                                           color: theme.colorScheme.onSurface,
                                                         ),
                                                       ),
                                                     ],
                                                   ),
-                                                  const SizedBox(height: 12),
+                                                  SizedBox(height: context.spacingS),
                                                   Wrap(
-                                                    spacing: 8,
-                                                    runSpacing: 8,
+                                                    spacing: context.spacingS,
+                                                    runSpacing: context.spacingS,
                                                     children: [
                                                       Semantics(
                                                         label: 'View expiring items',
@@ -600,26 +688,28 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                           message: 'Show items expiring soon',
                                                           child: InkWell(
                                                             onTap: () => context.push('/dashboard/expiring'),
-                                                            borderRadius: BorderRadius.circular(20),
+                                                            borderRadius: context.borderRadiusPill,
                                                             child: Container(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                                              padding: EdgeInsets.symmetric(
+                                                                horizontal: context.spacingM,
+                                                                vertical: context.spacingS,
+                                                              ),
                                                               decoration: BoxDecoration(
                                                                 color: isDark ? const Color(0xFF422006) : const Color(0xFFFEF3C7),
                                                                 border: Border.all(
                                                                   color: isDark ? const Color(0xFF5A3E12) : const Color(0xFFFDE68A),
                                                                 ),
-                                                                borderRadius: BorderRadius.circular(20),
+                                                                borderRadius: context.borderRadiusPill,
                                                               ),
                                                               child: Row(
                                                                 mainAxisSize: MainAxisSize.min,
                                                                 children: [
                                                                   const Text('⏳', style: TextStyle(fontSize: 14)),
-                                                                  const SizedBox(width: 6),
+                                                                  SizedBox(width: context.spacingXS),
                                                                   Text(
                                                                     '${expiring.length} Expiring',
-                                                                    style: theme.textTheme.labelMedium?.copyWith(
+                                                                    style: context.labelStyle.copyWith(
                                                                       color: isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309),
-                                                                      fontWeight: FontWeight.bold,
                                                                     ),
                                                                   ),
                                                                 ],
@@ -635,26 +725,28 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                           message: 'Show expired items',
                                                           child: InkWell(
                                                             onTap: () => context.push('/dashboard/expired'),
-                                                            borderRadius: BorderRadius.circular(20),
+                                                            borderRadius: context.borderRadiusPill,
                                                             child: Container(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                                              padding: EdgeInsets.symmetric(
+                                                                horizontal: context.spacingM,
+                                                                vertical: context.spacingS,
+                                                              ),
                                                               decoration: BoxDecoration(
                                                                 color: isDark ? const Color(0xFF4C0519) : const Color(0xFFFFF1F2),
                                                                 border: Border.all(
                                                                   color: isDark ? const Color(0xFF6B1D2F) : const Color(0xFFFFE4E6),
                                                                 ),
-                                                                borderRadius: BorderRadius.circular(20),
+                                                                borderRadius: context.borderRadiusPill,
                                                               ),
                                                               child: Row(
                                                                 mainAxisSize: MainAxisSize.min,
                                                                 children: [
                                                                   const Text('❌', style: TextStyle(fontSize: 14)),
-                                                                  const SizedBox(width: 6),
+                                                                  SizedBox(width: context.spacingXS),
                                                                   Text(
                                                                     '${expired.length} Expired',
-                                                                    style: theme.textTheme.labelMedium?.copyWith(
+                                                                    style: context.labelStyle.copyWith(
                                                                       color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C),
-                                                                      fontWeight: FontWeight.bold,
                                                                     ),
                                                                   ),
                                                                 ],
@@ -669,108 +761,129 @@ class _HomePageState extends ConsumerState<HomePage> {
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(height: 16),
-                                          ExpiryStatusChart(
-                                            expired: expired.length,
-                                            expiring: expiring.length,
-                                            active: active,
-                                          ),
                                         ],
                                       );
                                     },
                                     loading: () => const SizedBox(),
-                                    error: (_, __) => const SizedBox(),
+                                    error: (_, _) => const SizedBox(),
                                   ),
                                   loading: () => const SizedBox(),
-                                  error: (_, __) => const SizedBox(),
+                                  error: (_, _) => const SizedBox(),
                                 ),
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: RAppSpacing.lg + 4),
+                          SizedBox(height: context.spacingL),
 
-                          Text('Activity', style: theme.textTheme.titleLarge),
-                          const SizedBox(height: RAppSpacing.sm + 4),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SegmentedButton<_ActivityFilter>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: _ActivityFilter.recent,
-                                  label: Text('Recent'),
-                                  icon: Icon(Icons.history, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: _ActivityFilter.important,
-                                  label: Text('Important'),
-                                  icon: Icon(Icons.star_outline, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: _ActivityFilter.forgotten,
-                                  label: Text('Forgotten'),
-                                  icon: Icon(Icons.visibility_off_outlined,
-                                      size: 16),
-                                ),
-                              ],
-                              selected: {_activityFilter},
-                              onSelectionChanged: (selection) {
-                                setState(() => _activityFilter = selection.first);
-                              },
-                              style: ButtonStyle(
-                                backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return const Color(0xFFD10047);
-                                  }
-                                  return theme.colorScheme.surfaceContainer;
-                                }),
-                                foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return Colors.white;
-                                  }
-                                  return theme.colorScheme.onSurface;
-                                }),
-                              ),
-                            ),
+                          // Section 4: Continue Where You Left Off
+                          Text(
+                            'Continue Where You Left Off',
+                            style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(height: RAppSpacing.sm + 4),
+                          const SizedBox(height: 8),
+                          recentAsync.when(
+                            loading: () => const LoadingStateWidget(type: LoadingType.list),
+                            error: (err, _) => ErrorStateWidget(
+                              description: "We couldn't retrieve your recently viewed items.",
+                              onRetry: () => ref.invalidate(recentlyViewedProvider),
+                            ),
+                            data: (items) {
+                              final list = items.take(5).toList();
+                              if (list.isEmpty) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(context.spacingM),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                    borderRadius: context.borderRadiusM,
+                                  ),
+                                  child: Text(
+                                    'Items you recently opened will appear here.',
+                                    style: context.bodySmallStyle.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: list.length,
+                                itemBuilder: (context, index) {
+                                  final item = list[index];
+                                  return SlideInFromLeft(
+                                    delayMilliseconds: index * 60,
+                                    child: ItemActivityTile(
+                                      item: item,
+                                      customTimeText: _getRelativeViewedTime(item.viewedAt),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
 
-                          if (_activityFilter == _ActivityFilter.recent)
-                            HomeAsyncList(
-                              asyncValue: recentAsync,
-                              emptyMessage: 'No recently viewed items',
-                              emptyIcon: Icons.history,
-                              onRetry: () =>
-                                  ref.invalidate(recentlyViewedProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
+                          SizedBox(height: context.spacingL),
+
+                          // Section 5: Forgotten Items
+                          Text(
+                            'Forgotten Items',
+                            style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          forgottenAsync.when(
+                            loading: () => const LoadingStateWidget(type: LoadingType.list),
+                            error: (err, _) => ErrorStateWidget(
+                              description: "We couldn't retrieve your forgotten items.",
+                              onRetry: () => ref.invalidate(forgottenItemsProvider),
                             ),
-                          if (_activityFilter == _ActivityFilter.important)
-                            HomeAsyncList(
-                              asyncValue: importantAsync,
-                              emptyMessage: 'No important items yet',
-                              emptyIcon: Icons.star_outline,
-                              onRetry: () =>
-                                  ref.invalidate(importantItemsProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
-                            ),
-                          if (_activityFilter == _ActivityFilter.forgotten)
-                            HomeAsyncList(
-                              asyncValue: forgottenAsync,
-                              emptyMessage: 'Nothing forgotten - nice!',
-                              emptyIcon: Icons.visibility_off_outlined,
-                              onRetry: () =>
-                                  ref.invalidate(forgottenItemsProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
-                            ),
+                            data: (items) {
+                              final sorted = List<StorageNodeEntity>.from(items)
+                                ..sort((a, b) {
+                                  final dateA = a.viewedAt ?? a.createdAt;
+                                  final dateB = b.viewedAt ?? b.createdAt;
+                                  return dateA.compareTo(dateB);
+                                });
+
+                              if (sorted.isEmpty) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(context.spacingM),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                    borderRadius: context.borderRadiusM,
+                                  ),
+                                  child: Text(
+                                    'Items left untouched for a long time will appear here.',
+                                    style: context.bodySmallStyle.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: sorted.length,
+                                itemBuilder: (context, index) {
+                                  final item = sorted[index];
+                                  return SlideInFromLeft(
+                                    delayMilliseconds: index * 60,
+                                    child: ItemActivityTile(
+                                      item: item,
+                                      customTimeText: _getForgottenContextText(item),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                         ],
                       );
                     },
@@ -781,7 +894,47 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         ),
       ),
-    );
+    ),
+  );
+}
+
+  String _getRelativeViewedTime(DateTime? date) {
+    if (date == null) return 'Viewed long ago';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'Viewed just now';
+    } else if (difference.inMinutes < 60) {
+      final m = difference.inMinutes;
+      return 'Viewed $m ${m == 1 ? 'minute' : 'minutes'} ago';
+    } else if (difference.inHours < 24) {
+      final h = difference.inHours;
+      return 'Viewed $h ${h == 1 ? 'hour' : 'hours'} ago';
+    } else {
+      final days = difference.inDays;
+      if (days == 1) return 'Viewed yesterday';
+      return 'Viewed $days days ago';
+    }
+  }
+
+  String _getForgottenContextText(StorageNodeEntity item) {
+    final date = item.viewedAt ?? item.createdAt;
+    final diff = DateTime.now().difference(date);
+    final hasOpened = item.viewedAt != null;
+
+    if (diff.inDays >= 365) {
+      return 'Stored over a year ago';
+    }
+    final months = (diff.inDays / 30).floor();
+    if (months >= 1) {
+      if (hasOpened) {
+        return 'Last viewed $months ${months == 1 ? 'month' : 'months'} ago';
+      } else {
+        return 'Haven\'t opened for $months ${months == 1 ? 'month' : 'months'}';
+      }
+    }
+    return 'Last viewed ${diff.inDays} days ago';
   }
 }
 
@@ -794,22 +947,22 @@ class _AddRoomCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return InkWell(
-      borderRadius: BorderRadius.circular(RAppRadius.lg),
+      borderRadius: context.borderRadiusL,
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(RAppRadius.lg),
+          borderRadius: context.borderRadiusL,
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_rounded, color: theme.colorScheme.primary),
-              const SizedBox(height: RAppSpacing.xs + 2),
+              Icon(Icons.add_rounded, color: theme.colorScheme.primary, size: context.iconMedium),
+              SizedBox(height: context.spacingXS),
               Text(
                 'Add Room',
-                style: theme.textTheme.labelMedium?.copyWith(
+                style: context.labelStyle.copyWith(
                   color: theme.colorScheme.primary,
                 ),
               ),
@@ -822,37 +975,62 @@ class _AddRoomCard extends StatelessWidget {
 }
 
 class _EmptyHomeState extends StatelessWidget {
+  final VoidCallback onAddItem;
   final VoidCallback onAddRoom;
 
-  const _EmptyHomeState({required this.onAddRoom});
+  const _EmptyHomeState({
+    required this.onAddItem,
+    required this.onAddRoom,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return FadeInScale(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 56),
+        padding: EdgeInsets.symmetric(vertical: context.spacingXL + 24),
         child: Center(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.inventory_2_outlined,
-                size: 56,
+                size: context.iconXL + 8,
                 color: theme.colorScheme.outline,
               ),
-              const SizedBox(height: RAppSpacing.md),
-              Text('Nothing organized yet', style: theme.textTheme.titleMedium),
-              const SizedBox(height: RAppSpacing.xs + 2),
+              SizedBox(height: context.spacingM),
+              Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.w700)),
+              SizedBox(height: context.spacingXS),
               Text(
-                'Add your first room to start organizing\nwhere your things live.',
+                'Add your items to start organizing\nwhere your things live.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium,
+                style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              const SizedBox(height: RAppSpacing.md + 4),
+              SizedBox(height: context.spacingM + 4),
               FilledButton.icon(
+                onPressed: onAddItem,
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                label: Text(
+                  'Add Your First Item',
+                  style: context.buttonStyle,
+                ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(180, 48),
+                  backgroundColor: const Color(0xFFD10047),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
                 onPressed: onAddRoom,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Your First Room'),
+                icon: const Icon(Icons.meeting_room_rounded),
+                label: Text(
+                  'Create Room',
+                  style: context.buttonStyle,
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(180, 48),
+                ),
               ),
             ],
           ),

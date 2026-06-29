@@ -1,5 +1,6 @@
-import 'package:find_my_stuff/core/constants/app_radius.dart';
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class DashboardStatCard extends StatefulWidget {
   final String title;
@@ -84,7 +85,7 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
             message: tooltipMsg,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                borderRadius: context.borderRadiusL,
                 gradient: LinearGradient(
                   colors: gradientColors,
                   begin: Alignment.topLeft,
@@ -92,7 +93,7 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
                     blurRadius: _isHovered ? 12 : 6,
                     offset: Offset(0, _isHovered ? 6 : 2),
                   ),
@@ -100,41 +101,44 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
               ),
               child: Material(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(RAppRadius.lg),
+                borderRadius: context.borderRadiusL,
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: widget.onTap,
-                  hoverColor: Colors.black.withOpacity(0.02),
-                  splashColor: theme.colorScheme.primary.withOpacity(0.1),
+                  hoverColor: Colors.black.withValues(alpha: 0.02),
+                  splashColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.spacingS + 4,
+                      vertical: context.spacingS,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           emoji,
-                          style: const TextStyle(fontSize: 22),
+                          style: TextStyle(fontSize: context.iconMedium),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
+                        SizedBox(height: context.spacingXS),
+                        AutoSizeText(
                           widget.value,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
+                          style: context.headlineStyle.copyWith(
                             color: theme.colorScheme.onSurface,
                           ),
                           maxLines: 1,
+                          minFontSize: 12,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
-                        Text(
+                        AutoSizeText(
                           widget.title,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
+                          style: context.labelStyle.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             letterSpacing: 0.5,
                           ),
                           maxLines: 1,
+                          minFontSize: 9,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],

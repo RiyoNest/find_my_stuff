@@ -5,11 +5,14 @@ import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
 import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
 import 'package:find_my_stuff/shared/widgets/empty_state_widget.dart';
-import 'package:find_my_stuff/shared/utils/responsive_grid_delegate.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
+import 'package:find_my_stuff/shared/widgets/loading_state_widget.dart';
+import 'package:find_my_stuff/shared/widgets/error_state_widget.dart';
 
 class PhotoGalleryPage extends ConsumerStatefulWidget {
   const PhotoGalleryPage({super.key});
@@ -25,6 +28,7 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
   Widget build(BuildContext context) {
     final itemsAsync = ref.watch(itemsWithPhotosProvider);
     final repo = ref.read(storageNodeRepositoryProvider);
+    final theme = Theme.of(context);
 
     final segments = [
       BreadcrumbSegment(
@@ -49,8 +53,11 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
       initialSearchQuery: _searchQuery,
       breadcrumbs: segments,
       child: itemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(err.toString())),
+        loading: () => const LoadingStateWidget(type: LoadingType.grid),
+        error: (err, _) => ErrorStateWidget(
+          description: "We couldn't retrieve your photos.",
+          onRetry: () => ref.invalidate(itemsWithPhotosProvider),
+        ),
         data: (items) {
           if (items.isEmpty) {
             return const EmptyStateWidget(
@@ -80,15 +87,15 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
             );
           }
 
-          final cols = ResponsiveLayout.getColumns(context);
+          final cols = context.columns;
           return GridView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
             itemCount: filtered.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: cols,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: ResponsiveLayout.getPhotoCardAspectRatio(cols),
+              mainAxisSpacing: context.spacingS + 4,
+              crossAxisSpacing: context.spacingS + 4,
+              childAspectRatio: context.photoCardAspectRatio,
             ),
             itemBuilder: (_, index) {
               final item = filtered[index];
@@ -107,16 +114,16 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: context.borderRadiusL,
                 child: Card(
                   margin: EdgeInsets.zero,
                   clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: context.borderRadiusL,
                     side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                   ),
                   elevation: 2,
-                  shadowColor: Colors.black.withOpacity(0.08),
+                  shadowColor: Colors.black.withValues(alpha: 0.08),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -129,36 +136,38 @@ class _PhotoGalleryPageState extends ConsumerState<PhotoGalleryPage> {
                             width: double.infinity,
                             placeholder: Container(
                               color: const Color(0xFFFFF5F8),
-                              child: const Icon(
-                                Icons.broken_image_outlined,
-                                size: 36,
-                                color: Color(0xFFD10047),
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image_outlined,
+                                  size: context.iconLarge,
+                                  color: const Color(0xFFD10047),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(10),
+                        padding: EdgeInsets.all(context.spacingS + 2),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
+                            AutoSizeText(
                               item.name,
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
+                              style: context.titleStyle.copyWith(
+                                color: theme.colorScheme.onSurface,
+                              ),
                               maxLines: 1,
+                              minFontSize: 11,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: context.spacingXS),
                             Text(
                               path.isNotEmpty ? path : 'No location path',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
+                              style: context.bodySmallStyle.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
