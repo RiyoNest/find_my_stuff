@@ -58,7 +58,11 @@ class ResponsiveTokens {
   }
 
   static EdgeInsets cardPadding(BuildContext context) {
-    return EdgeInsets.all(spacingM(context));
+    final horizontal = spacingM(context);
+    final vertical = ResponsiveBreakpoints.isDesktop(context)
+        ? 20.0
+        : (ResponsiveBreakpoints.isTablet(context) || ResponsiveBreakpoints.isLargeTablet(context) ? 15.0 : 12.0);
+    return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
   }
 
   static EdgeInsets sheetPadding(BuildContext context) {
@@ -115,9 +119,9 @@ class ResponsiveTokens {
   // =========================
 
   static double dashboardCardHeight(BuildContext context) {
-    if (ResponsiveBreakpoints.isDesktop(context)) return 130.0;
-    if (ResponsiveBreakpoints.isTablet(context) || ResponsiveBreakpoints.isLargeTablet(context)) return 120.0;
-    return 110.0;
+    if (ResponsiveBreakpoints.isDesktop(context)) return 124.0;
+    if (ResponsiveBreakpoints.isTablet(context) || ResponsiveBreakpoints.isLargeTablet(context)) return 114.0;
+    return 104.0;
   }
 
   static double roomCardWidth(BuildContext context) {

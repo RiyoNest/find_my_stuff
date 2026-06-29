@@ -102,7 +102,7 @@ class _RoomCardState extends State<RoomCard> {
                 border: Border.all(color: borderColor, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
                     blurRadius: _isHovered ? 10 : 5,
                     offset: Offset(0, _isHovered ? 5 : 2),
                   ),
@@ -115,8 +115,8 @@ class _RoomCardState extends State<RoomCard> {
                 child: InkWell(
                   borderRadius: context.borderRadiusL,
                   onTap: widget.onTap,
-                  hoverColor: tintColor.withOpacity(0.04),
-                  splashColor: tintColor.withOpacity(0.1),
+                  hoverColor: tintColor.withValues(alpha: 0.04),
+                  splashColor: tintColor.withValues(alpha: 0.1),
                   child: Padding(
                     padding: context.cardPadding,
                     child: Column(
@@ -148,7 +148,6 @@ class _RoomCardState extends State<RoomCard> {
                           minFontSize: 12,
                           overflow: TextOverflow.ellipsis,
                           style: context.titleStyle.copyWith(
-                            fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
@@ -168,10 +167,10 @@ class _RoomCardState extends State<RoomCard> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: context.spacingXS + 2, vertical: context.spacingXS),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4) : Colors.white.withOpacity(0.8),
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.8),
         borderRadius: context.borderRadiusS,
         border: Border.all(
-          color: isDark ? theme.colorScheme.outline.withOpacity(0.2) : const Color(0xFFECEFF1),
+          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.2) : const Color(0xFFECEFF1),
           width: 0.8,
         ),
       ),
@@ -186,8 +185,6 @@ class _RoomCardState extends State<RoomCard> {
           Text(
             '$count',
             style: context.labelStyle.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 10,
               color: theme.colorScheme.onSurface,
             ),
           ),

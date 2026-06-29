@@ -35,7 +35,6 @@
 // NOTE: Place-switching UI is intentionally omitted — you said you're
 // holding that feature for the next version.
 
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/widgets/quick_add_sheet.dart';
 import 'package:find_my_stuff/shared/widgets/speed_dial_fab.dart';
@@ -51,19 +50,18 @@ import 'package:find_my_stuff/shared/repositories/place_repository.dart';
 import 'package:find_my_stuff/shared/widgets/animation_helpers.dart';
 import 'package:find_my_stuff/shared/widgets/app_drawer.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
-import 'package:find_my_stuff/shared/widgets/dashboard_charts.dart';
 import 'package:find_my_stuff/shared/widgets/dashboard_stat_card.dart';
 import 'package:find_my_stuff/shared/widgets/expiry_alert_banner.dart';
-import 'package:find_my_stuff/shared/widgets/home_async_list.dart';
 import 'package:find_my_stuff/shared/widgets/item_activity_tile.dart';
 import 'package:find_my_stuff/shared/widgets/room_card.dart';
+import 'package:find_my_stuff/shared/widgets/loading_state_widget.dart';
+import 'package:find_my_stuff/shared/widgets/error_state_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-
-enum _ActivityFilter { recent, important, forgotten }
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -78,7 +76,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   late final List<PlaceEntity> _allPlaces;
   late PlaceEntity currentPlace;
 
-  _ActivityFilter _activityFilter = _ActivityFilter.recent;
+  final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
 
   @override
   void initState() {
@@ -123,6 +121,91 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  Future<void> _addLocationFromHome() async {
+    final rooms = ref.read(roomListProvider(currentPlace.uuid)).value ?? [];
+    if (rooms.isEmpty) {
+      if (mounted) {
+        AppSnackBar.error(context, "Please create a room first.");
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final RoomEntity? selectedRoom = await showModalBottomSheet<RoomEntity>(
+      context: context,
+      showDragHandle: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(context.radiusL)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: context.sheetPadding,
+                child: Text(
+                  'Select Room',
+                  style: context.titleStyle,
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: rooms.length,
+                  itemBuilder: (context, index) {
+                    final room = rooms[index];
+                    return ListTile(
+                      leading: const Icon(Icons.meeting_room_rounded),
+                      title: Text(room.name),
+                      onTap: () => Navigator.pop(context, room),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selectedRoom == null) return;
+    if (!mounted) return;
+
+    final name = await QuickAddSheet.show(
+      context,
+      title: 'Add Location',
+      hintText: 'e.g. Wardrobe, Pantry',
+    );
+
+    if (name == null || name.trim().isEmpty) return;
+
+    try {
+      final node = StorageNodeEntity(
+        uuid: const Uuid().v4(),
+        roomUuid: selectedRoom.uuid,
+        parentUuid: null,
+        nodeType: NodeType.storageLocation.name,
+        name: name.trim(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final repo = ref.read(storageNodeRepositoryProvider);
+      repo.save(node);
+      ref.read(storageRefreshProvider.notifier).state++;
+
+      if (mounted) {
+        AppSnackBar.success(context, '"$name" added');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, "Couldn't add Location. Please try again.");
+      }
+    }
+  }
+
   void _addItem() => context.push('/quick-add');
 
   Future<void> _addChildFromHome(NodeType type) async {
@@ -152,7 +235,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 padding: context.sheetPadding,
                 child: Text(
                   'Select Parent Location',
-                  style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                  style: context.titleStyle,
                 ),
               ),
               Flexible(
@@ -241,61 +324,87 @@ class _HomePageState extends ConsumerState<HomePage> {
     final roomsAsync = ref.watch(roomListProvider(currentPlace.uuid));
     final recentAsync = ref.watch(recentlyViewedProvider);
     final forgottenAsync = ref.watch(forgottenItemsProvider);
-    final importantAsync = ref.watch(importantItemsProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final expiringAsync = ref.watch(expiringItemsProvider);
     final expiredAsync = ref.watch(expiredItemsProvider);
-    final destinationsAsync = ref.watch(quickAddDestinationsProvider);
     final archivedAsync = ref.watch(archivedItemsProvider);
-
-    // Fix: whenever any storage write increments storageRefreshProvider,
-    // also re-evaluate quickAddDestinationsProvider so the Quick Add
-    // button appears/disappears immediately on navigating back — not only
-    // on pull-to-refresh or app restart.
-    ref.listen(storageRefreshProvider, (_, __) {
-      ref.invalidate(quickAddDestinationsProvider);
-    });
-
-    final canQuickAdd = destinationsAsync.value?.isNotEmpty ?? false;
     final archivedCount = archivedAsync.value?.length ?? 0;
 
     return Scaffold(
       drawer: const AppDrawer(),
-      floatingActionButton: SpeedDialFAB(
-        tooltip: 'Add Options',
-        items: [
-          SpeedDialItem(
-            icon: Icons.meeting_room_rounded,
-            label: 'Add Room',
-            onTap: _addRoom,
-          ),
-          SpeedDialItem(
-            icon: Icons.view_agenda_outlined,
-            label: 'Add Section',
-            onTap: () => _addChildFromHome(NodeType.section),
-          ),
-          SpeedDialItem(
-            icon: Icons.inventory_2_outlined,
-            label: 'Add Container',
-            onTap: () => _addChildFromHome(NodeType.container),
-          ),
-          SpeedDialItem(
-            icon: Icons.label_outline,
-            label: 'Add Item',
-            onTap: _addItem,
-          ),
-        ],
+      floatingActionButton: ValueListenableBuilder<bool>(
+        valueListenable: _isFabExtended,
+        builder: (context, isExtended, child) {
+          return SpeedDialFAB(
+            tooltip: 'Add Options',
+            isExtended: isExtended,
+            items: [
+              SpeedDialItem(
+                icon: Icons.label_outline,
+                label: 'Add Item',
+                onTap: _addItem,
+              ),
+              SpeedDialItem(
+                icon: Icons.meeting_room_rounded,
+                label: 'New Room',
+                onTap: _addRoom,
+              ),
+              SpeedDialItem(
+                icon: Icons.inventory_2_outlined,
+                label: 'New Location',
+                onTap: _addLocationFromHome,
+              ),
+              SpeedDialItem(
+                icon: Icons.view_agenda_outlined,
+                label: 'New Section',
+                onTap: () => _addChildFromHome(NodeType.section),
+              ),
+              SpeedDialItem(
+                icon: Icons.inventory_2_outlined,
+                label: 'New Container',
+                onTap: () => _addChildFromHome(NodeType.container),
+              ),
+            ],
+          );
+        },
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: true,
-              snap: true,
-              title: Text(currentPlace.name),
-            ),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.metrics.pixels <= 50) {
+              if (!_isFabExtended.value) {
+                _isFabExtended.value = true;
+              }
+              return false;
+            }
+            if (notification is UserScrollNotification) {
+              if (notification.direction == ScrollDirection.reverse) {
+                if (_isFabExtended.value) {
+                  _isFabExtended.value = false;
+                }
+              } else if (notification.direction == ScrollDirection.forward) {
+                if (!_isFabExtended.value) {
+                  _isFabExtended.value = true;
+                }
+              }
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                floating: true,
+                snap: true,
+                title: Text(
+                  currentPlace.name,
+                  style: context.titleStyle.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 context.spacingM,
@@ -318,34 +427,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ),
 
-                  // Conditional Quick Add — only shown once a path exists,
-                  // so first-time users learn the hierarchy first.
-                  if (canQuickAdd) ...[
-                    SizedBox(height: context.spacingS + 4),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: _addItem,
-                        icon: const Icon(Icons.add_circle_outline_rounded),
-                        label: Text(
-                          'Quick Add Item',
-                          style: context.buttonStyle.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD10047),
-                          foregroundColor: Colors.white,
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: context.borderRadiusPill,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-
                   SizedBox(height: context.spacingM),
 
                   // Merged expired + expiring urgency banner.
@@ -360,10 +441,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                             context.push('/dashboard/expiring'),
                       ),
                       loading: () => const SizedBox(),
-                      error: (_, __) => const SizedBox(),
+                      error: (_, _) => const SizedBox(),
                     ),
                     loading: () => const SizedBox(),
-                    error: (_, __) => const SizedBox(),
+                    error: (_, _) => const SizedBox(),
                   ),
 
                   roomsAsync.when(
@@ -389,8 +470,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                     data: (rooms) {
-                      if (rooms.isEmpty) {
-                        return _EmptyHomeState(onAddRoom: _addRoom);
+                      final stats = statsAsync.value;
+                      final totalItems = stats?['items'] ?? (rooms.isEmpty ? 0 : 1);
+                      if (totalItems == 0) {
+                        return _EmptyHomeState(
+                          onAddItem: _addItem,
+                          onAddRoom: _addRoom,
+                        );
                       }
 
                       return Column(
@@ -405,7 +491,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               height: 100,
                               child: Center(child: CircularProgressIndicator()),
                             ),
-                            error: (_, __) => const SizedBox(),
+                            error: (_, _) => const SizedBox(),
                             data: (stats) => FadeInScale(
                               duration: const Duration(milliseconds: 350),
                               child: SizedBox(
@@ -469,7 +555,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             children: [
                               Text(
                                 'Rooms',
-                                style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                                style: context.titleStyle,
                               ),
                               Container(
                                 padding: EdgeInsets.symmetric(
@@ -484,7 +570,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   '${rooms.length} Room(s)',
                                   style: context.labelStyle.copyWith(
                                     color: theme.colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -496,7 +581,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               itemCount: rooms.length + 1,
-                              separatorBuilder: (_, __) => SizedBox(width: context.spacingS),
+                              separatorBuilder: (_, _) => SizedBox(width: context.spacingS),
                               itemBuilder: (context, index) {
                                 if (index == rooms.length) {
                                   return SizedBox(
@@ -554,10 +639,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     data: (expiring) {
                                       final totalItems =
                                           statsAsync.value?['items'] ?? 0;
-                                      final active = (totalItems -
-                                          expired.length -
-                                          expiring.length)
-                                          .clamp(0, totalItems);
 
                                       return Column(
                                         mainAxisSize: MainAxisSize.min,
@@ -584,14 +665,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                           'Items Stored',
                                                           style: context.titleStyle.copyWith(
                                                             color: theme.colorScheme.onSurfaceVariant,
-                                                            fontWeight: FontWeight.bold,
                                                           ),
                                                         ),
                                                       ),
                                                       Text(
                                                         '$totalItems',
                                                         style: context.displayStyle.copyWith(
-                                                          fontWeight: FontWeight.w900,
                                                           color: theme.colorScheme.onSurface,
                                                         ),
                                                       ),
@@ -631,7 +710,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                     '${expiring.length} Expiring',
                                                                     style: context.labelStyle.copyWith(
                                                                       color: isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309),
-                                                                      fontWeight: FontWeight.bold,
                                                                     ),
                                                                   ),
                                                                 ],
@@ -669,7 +747,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                     '${expired.length} Expired',
                                                                     style: context.labelStyle.copyWith(
                                                                       color: isDark ? const Color(0xFFFDA4AF) : const Color(0xFFBE123C),
-                                                                      fontWeight: FontWeight.bold,
                                                                     ),
                                                                   ),
                                                                 ],
@@ -684,20 +761,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                                               ),
                                             ),
                                           ),
-                                          SizedBox(height: context.spacingM),
-                                          ExpiryStatusChart(
-                                            expired: expired.length,
-                                            expiring: expiring.length,
-                                            active: active,
-                                          ),
                                         ],
                                       );
                                     },
                                     loading: () => const SizedBox(),
-                                    error: (_, __) => const SizedBox(),
+                                    error: (_, _) => const SizedBox(),
                                   ),
                                   loading: () => const SizedBox(),
-                                  error: (_, __) => const SizedBox(),
+                                  error: (_, _) => const SizedBox(),
                                 ),
                               ),
                             ),
@@ -705,87 +776,114 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                           SizedBox(height: context.spacingL),
 
-                          Text('Activity', style: context.titleStyle),
-                          SizedBox(height: context.spacingS + 4),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SegmentedButton<_ActivityFilter>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: _ActivityFilter.recent,
-                                  label: Text('Recent'),
-                                  icon: Icon(Icons.history, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: _ActivityFilter.important,
-                                  label: Text('Important'),
-                                  icon: Icon(Icons.star_outline, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: _ActivityFilter.forgotten,
-                                  label: Text('Forgotten'),
-                                  icon: Icon(Icons.visibility_off_outlined,
-                                      size: 16),
-                                ),
-                              ],
-                              selected: {_activityFilter},
-                              onSelectionChanged: (selection) {
-                                setState(() => _activityFilter = selection.first);
-                              },
-                              style: ButtonStyle(
-                                backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return const Color(0xFFD10047);
-                                  }
-                                  return theme.colorScheme.surfaceContainer;
-                                }),
-                                foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return Colors.white;
-                                  }
-                                  return theme.colorScheme.onSurface;
-                                }),
-                              ),
-                            ),
+                          // Section 4: Continue Where You Left Off
+                          Text(
+                            'Continue Where You Left Off',
+                            style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(height: context.spacingS + 4),
+                          const SizedBox(height: 8),
+                          recentAsync.when(
+                            loading: () => const LoadingStateWidget(type: LoadingType.list),
+                            error: (err, _) => ErrorStateWidget(
+                              description: "We couldn't retrieve your recently viewed items.",
+                              onRetry: () => ref.invalidate(recentlyViewedProvider),
+                            ),
+                            data: (items) {
+                              final list = items.take(5).toList();
+                              if (list.isEmpty) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(context.spacingM),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                    borderRadius: context.borderRadiusM,
+                                  ),
+                                  child: Text(
+                                    'Items you recently opened will appear here.',
+                                    style: context.bodySmallStyle.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: list.length,
+                                itemBuilder: (context, index) {
+                                  final item = list[index];
+                                  return SlideInFromLeft(
+                                    delayMilliseconds: index * 60,
+                                    child: ItemActivityTile(
+                                      item: item,
+                                      customTimeText: _getRelativeViewedTime(item.viewedAt),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
 
-                          if (_activityFilter == _ActivityFilter.recent)
-                            HomeAsyncList(
-                              asyncValue: recentAsync,
-                              emptyMessage: 'No recently viewed items',
-                              emptyIcon: Icons.history,
-                              onRetry: () =>
-                                  ref.invalidate(recentlyViewedProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
+                          SizedBox(height: context.spacingL),
+
+                          // Section 5: Forgotten Items
+                          Text(
+                            'Forgotten Items',
+                            style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          forgottenAsync.when(
+                            loading: () => const LoadingStateWidget(type: LoadingType.list),
+                            error: (err, _) => ErrorStateWidget(
+                              description: "We couldn't retrieve your forgotten items.",
+                              onRetry: () => ref.invalidate(forgottenItemsProvider),
                             ),
-                          if (_activityFilter == _ActivityFilter.important)
-                            HomeAsyncList(
-                              asyncValue: importantAsync,
-                              emptyMessage: 'No important items yet',
-                              emptyIcon: Icons.star_outline,
-                              onRetry: () =>
-                                  ref.invalidate(importantItemsProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
-                            ),
-                          if (_activityFilter == _ActivityFilter.forgotten)
-                            HomeAsyncList(
-                              asyncValue: forgottenAsync,
-                              emptyMessage: 'Nothing forgotten - nice!',
-                              emptyIcon: Icons.visibility_off_outlined,
-                              onRetry: () =>
-                                  ref.invalidate(forgottenItemsProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
-                            ),
+                            data: (items) {
+                              final sorted = List<StorageNodeEntity>.from(items)
+                                ..sort((a, b) {
+                                  final dateA = a.viewedAt ?? a.createdAt;
+                                  final dateB = b.viewedAt ?? b.createdAt;
+                                  return dateA.compareTo(dateB);
+                                });
+
+                              if (sorted.isEmpty) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(context.spacingM),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                    borderRadius: context.borderRadiusM,
+                                  ),
+                                  child: Text(
+                                    'Items left untouched for a long time will appear here.',
+                                    style: context.bodySmallStyle.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: sorted.length,
+                                itemBuilder: (context, index) {
+                                  final item = sorted[index];
+                                  return SlideInFromLeft(
+                                    delayMilliseconds: index * 60,
+                                    child: ItemActivityTile(
+                                      item: item,
+                                      customTimeText: _getForgottenContextText(item),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                         ],
                       );
                     },
@@ -796,7 +894,47 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         ),
       ),
-    );
+    ),
+  );
+}
+
+  String _getRelativeViewedTime(DateTime? date) {
+    if (date == null) return 'Viewed long ago';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'Viewed just now';
+    } else if (difference.inMinutes < 60) {
+      final m = difference.inMinutes;
+      return 'Viewed $m ${m == 1 ? 'minute' : 'minutes'} ago';
+    } else if (difference.inHours < 24) {
+      final h = difference.inHours;
+      return 'Viewed $h ${h == 1 ? 'hour' : 'hours'} ago';
+    } else {
+      final days = difference.inDays;
+      if (days == 1) return 'Viewed yesterday';
+      return 'Viewed $days days ago';
+    }
+  }
+
+  String _getForgottenContextText(StorageNodeEntity item) {
+    final date = item.viewedAt ?? item.createdAt;
+    final diff = DateTime.now().difference(date);
+    final hasOpened = item.viewedAt != null;
+
+    if (diff.inDays >= 365) {
+      return 'Stored over a year ago';
+    }
+    final months = (diff.inDays / 30).floor();
+    if (months >= 1) {
+      if (hasOpened) {
+        return 'Last viewed $months ${months == 1 ? 'month' : 'months'} ago';
+      } else {
+        return 'Haven\'t opened for $months ${months == 1 ? 'month' : 'months'}';
+      }
+    }
+    return 'Last viewed ${diff.inDays} days ago';
   }
 }
 
@@ -826,7 +964,6 @@ class _AddRoomCard extends StatelessWidget {
                 'Add Room',
                 style: context.labelStyle.copyWith(
                   color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -838,9 +975,13 @@ class _AddRoomCard extends StatelessWidget {
 }
 
 class _EmptyHomeState extends StatelessWidget {
+  final VoidCallback onAddItem;
   final VoidCallback onAddRoom;
 
-  const _EmptyHomeState({required this.onAddRoom});
+  const _EmptyHomeState({
+    required this.onAddItem,
+    required this.onAddRoom,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -858,23 +999,37 @@ class _EmptyHomeState extends StatelessWidget {
                 color: theme.colorScheme.outline,
               ),
               SizedBox(height: context.spacingM),
-              Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+              Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.w700)),
               SizedBox(height: context.spacingXS),
               Text(
-                'Add your first room to start organizing\nwhere your things live.',
+                'Add your items to start organizing\nwhere your things live.',
                 textAlign: TextAlign.center,
                 style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               SizedBox(height: context.spacingM + 4),
               FilledButton.icon(
-                onPressed: onAddRoom,
-                icon: const Icon(Icons.add),
+                onPressed: onAddItem,
+                icon: const Icon(Icons.add_circle_outline_rounded),
                 label: Text(
-                  'Add Your First Room',
-                  style: context.buttonStyle.copyWith(fontWeight: FontWeight.bold),
+                  'Add Your First Item',
+                  style: context.buttonStyle,
                 ),
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size(120, 48),
+                  minimumSize: const Size(180, 48),
+                  backgroundColor: const Color(0xFFD10047),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: onAddRoom,
+                icon: const Icon(Icons.meeting_room_rounded),
+                label: Text(
+                  'Create Room',
+                  style: context.buttonStyle,
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(180, 48),
                 ),
               ),
             ],

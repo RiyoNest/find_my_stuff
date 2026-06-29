@@ -51,7 +51,6 @@ class ViewOptionsSheet extends ConsumerWidget {
                   maxLines: 1,
                   minFontSize: 14,
                   style: context.titleStyle.copyWith(
-                    fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
@@ -62,7 +61,6 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'View As',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
@@ -116,27 +114,30 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'Sort By',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
               SizedBox(height: context.spacingXS),
-              ...ContentSortOrder.values.map(
-                (order) => RadioListTile<ContentSortOrder>(
-                  value: order,
-                  groupValue: prefs.sortOrder,
-                  title: Text(
-                    order.label,
-                    style: context.bodyStyle.copyWith(
-                      color: theme.colorScheme.onSurface,
+              RadioGroup<ContentSortOrder>(
+                groupValue: prefs.sortOrder,
+                onChanged: (v) {
+                  if (v != null) notifier.setSortOrder(v);
+                },
+                child: Column(
+                  children: ContentSortOrder.values.map(
+                    (order) => RadioListTile<ContentSortOrder>(
+                      value: order,
+                      title: Text(
+                        order.label,
+                        style: context.bodyStyle.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      activeColor: const Color(0xFFD10047),
                     ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: const Color(0xFFD10047),
-                  onChanged: (v) {
-                    if (v != null) notifier.setSortOrder(v);
-                  },
+                  ).toList(),
                 ),
               ),
 
@@ -148,27 +149,30 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'Display Filter',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
               SizedBox(height: context.spacingXS),
-              ...ContentFilter.values.map(
-                (filter) => RadioListTile<ContentFilter>(
-                  value: filter,
-                  groupValue: prefs.filter,
-                  title: Text(
-                    filter.label,
-                    style: context.bodyStyle.copyWith(
-                      color: theme.colorScheme.onSurface,
+              RadioGroup<ContentFilter>(
+                groupValue: prefs.filter,
+                onChanged: (v) {
+                  if (v != null) notifier.setFilter(v);
+                },
+                child: Column(
+                  children: ContentFilter.values.map(
+                    (filter) => RadioListTile<ContentFilter>(
+                      value: filter,
+                      title: Text(
+                        filter.label,
+                        style: context.bodyStyle.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      activeColor: const Color(0xFFD10047),
                     ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  activeColor: const Color(0xFFD10047),
-                  onChanged: (v) {
-                    if (v != null) notifier.setFilter(v);
-                  },
+                  ).toList(),
                 ),
               ),
 
@@ -180,7 +184,6 @@ class ViewOptionsSheet extends ConsumerWidget {
               Text(
                 'Preferences (Coming Soon)',
                 style: context.subtitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 ),
               ),
@@ -259,7 +262,6 @@ class ViewOptionsSheet extends ConsumerWidget {
                     maxLines: 1,
                     minFontSize: 12,
                     style: context.buttonStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),

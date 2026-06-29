@@ -17,7 +17,7 @@ class SettingsPage extends ConsumerWidget {
         shape: RoundedRectangleBorder(
           borderRadius: ctx.borderRadiusL,
         ),
-        title: Text('Replace Existing Data?', style: ctx.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+        title: Text('Replace Existing Data?', style: ctx.titleStyle),
         content: Text(
           'Importing a backup will overwrite your current local database. This action cannot be undone. Do you want to continue?',
           style: ctx.bodyStyle,
@@ -43,15 +43,23 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(
+          'Settings',
+          style: context.titleStyle.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        scrolledUnderElevation: 0,
       ),
       body: ListView(
         children: [
           ListTile(
             leading: Icon(Icons.download, size: context.iconMedium),
-            title: Text('Export Backup', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+            title: Text('Export Backup', style: context.titleStyle),
             subtitle: Text(
               'Save all rooms and items',
               style: context.bodyMediumStyle,
@@ -71,7 +79,7 @@ class SettingsPage extends ConsumerWidget {
           ),
           ListTile(
             leading: Icon(Icons.download, size: context.iconMedium),
-            title: Text('Import Backup', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+            title: Text('Import Backup', style: context.titleStyle),
             subtitle: Text(
               'Restore database from a backup file',
               style: context.bodyMediumStyle,

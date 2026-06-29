@@ -7,6 +7,7 @@ import '../providers/storage_node_providers.dart';
 import '../entities/storage_node_entity.dart';
 import '../enums/node_type.dart';
 import 'safe_image_widget.dart';
+import '../extensions/context_extensions.dart';
 
 class HierarchyTreeView extends ConsumerWidget {
   final String rootUuid;
@@ -84,14 +85,13 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final textStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontSize: 14,
+    final textStyle = context.bodyStyle.copyWith(
       fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
       color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurface,
     );
 
     final activeBgColor = isActive
-        ? (isDark ? theme.colorScheme.primary.withOpacity(0.15) : const Color(0xFFFFF5F8))
+        ? (isDark ? theme.colorScheme.primary.withValues(alpha: 0.15) : const Color(0xFFFFF5F8))
         : Colors.transparent;
 
     if (isTerminal) {
@@ -129,7 +129,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
           trailing: Icon(
             Icons.chevron_right_rounded,
             size: 16,
-            color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+            color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
           ),
           onTap: () => context.push('/node/${node.uuid}'),
         ),
@@ -205,7 +205,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
                     'Error: $e',
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                    style: context.bodySmallStyle.copyWith(color: Colors.red),
                   ),
                 ),
                 data: (children) {
@@ -218,7 +218,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
                           const SizedBox(width: 4),
                           Text(
                             'Empty Location',
-                            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
+                            style: context.bodySmallStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -231,7 +231,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
                     decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(
-                          color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+                          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.3) : const Color(0xFFF8D7E3),
                           width: 1.0,
                         ),
                       ),

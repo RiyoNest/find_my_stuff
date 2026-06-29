@@ -51,7 +51,7 @@ class EmptyStateWidget extends StatelessWidget {
               title,
               textAlign: TextAlign.center,
               style: context.titleStyle.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
               ),
             ),

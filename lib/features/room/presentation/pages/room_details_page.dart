@@ -25,6 +25,8 @@ import '../../../../shared/widgets/safe_image_widget.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../core/utils/validation_helpers.dart';
 import '../../../../shared/widgets/custom_snackbar.dart';
+import '../../../../shared/widgets/loading_state_widget.dart';
+import '../../../../shared/widgets/error_state_widget.dart';
 
 class RoomDetailsPage extends ConsumerWidget {
   final String roomUuid;
@@ -40,15 +42,24 @@ class RoomDetailsPage extends ConsumerWidget {
 
     return roomAsync.when(
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: LoadingStateWidget(type: LoadingType.list),
       ),
       error: (e, _) => Scaffold(
-        body: Center(child: Text(e.toString())),
+        body: ErrorStateWidget(
+          description: "We couldn't load this room.",
+          onRetry: () => ref.invalidate(roomDetailsProvider(roomUuid)),
+        ),
       ),
       data: (room) {
         if (room == null) {
-          return const Scaffold(
-            body: Center(child: Text('Room not found')),
+          return Scaffold(
+            body: ErrorStateWidget(
+              description: 'Room not found',
+              secondaryAction: TextButton(
+                onPressed: () => context.pop(),
+                child: const Text('Go Back'),
+              ),
+            ),
           );
         }
 
@@ -81,7 +92,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
   Future<void> _addStorageLocation() async {
     final name = await QuickAddSheet.show(
       context,
-      title: 'Add Storage Location',
+      title: 'Add Location',
       hintText: 'e.g. Wardrobe, Pantry',
       labelText: 'Location Name',
       maxLength: ValidationHelpers.maxRoomNameLength,
@@ -189,7 +200,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
         items: [
           SpeedDialItem(
             icon: Icons.inventory_2_outlined,
-            label: 'Add Location',
+            label: 'New Location',
             onTap: _addStorageLocation,
           ),
           SpeedDialItem(
@@ -257,7 +268,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                     side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                   ),
                   elevation: 2,
-                  shadowColor: Colors.black.withOpacity(0.1),
+                  shadowColor: Colors.black.withValues(alpha: 0.1),
                   child: InkWell(
                     onTap: () => context.push('/node/${node.uuid}'),
                     hoverColor: const Color(0xFFFFF5F8),
@@ -292,7 +303,6 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                               AutoSizeText(
                                 node.name,
                                 style: context.titleStyle.copyWith(
-                                  fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.onSurface,
                                 ),
                                 maxLines: 1,
@@ -323,7 +333,7 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
           return ListView.separated(
             padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
             itemCount: processed.length,
-            separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
+            separatorBuilder: (_, _) => SizedBox(height: context.spacingS),
             itemBuilder: (context, index) {
               final node = processed[index];
               return Card(
@@ -361,7 +371,6 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
                   title: Text(
                     node.name,
                     style: context.titleStyle.copyWith(
-                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),

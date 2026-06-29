@@ -93,7 +93,7 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
                     blurRadius: _isHovered ? 12 : 6,
                     offset: Offset(0, _isHovered ? 6 : 2),
                   ),
@@ -105,12 +105,12 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: widget.onTap,
-                  hoverColor: Colors.black.withOpacity(0.02),
-                  splashColor: theme.colorScheme.primary.withOpacity(0.1),
+                  hoverColor: Colors.black.withValues(alpha: 0.02),
+                  splashColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: context.spacingS + 4,
-                      vertical: context.spacingS + 2,
+                      vertical: context.spacingS,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -124,7 +124,6 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                         AutoSizeText(
                           widget.value,
                           style: context.headlineStyle.copyWith(
-                            fontWeight: FontWeight.w900,
                             color: theme.colorScheme.onSurface,
                           ),
                           maxLines: 1,
@@ -135,7 +134,6 @@ class _DashboardStatCardState extends State<DashboardStatCard> {
                         AutoSizeText(
                           widget.title,
                           style: context.labelStyle.copyWith(
-                            fontWeight: FontWeight.w700,
                             color: theme.colorScheme.onSurfaceVariant,
                             letterSpacing: 0.5,
                           ),

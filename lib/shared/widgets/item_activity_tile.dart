@@ -8,10 +8,12 @@ import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class ItemActivityTile extends ConsumerStatefulWidget {
   final StorageNodeEntity item;
+  final String? customTimeText;
 
   const ItemActivityTile({
     super.key,
     required this.item,
+    this.customTimeText,
   });
 
   @override
@@ -57,16 +59,16 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                 borderRadius: context.borderRadiusL,
                 side: BorderSide(
                   color: isDark 
-                      ? theme.colorScheme.outline.withOpacity(0.2) 
-                      : const Color(0xFFF8D7E3).withOpacity(0.5),
+                      ? theme.colorScheme.outline.withValues(alpha: 0.2) 
+                      : const Color(0xFFF8D7E3).withValues(alpha: 0.5),
                   width: 1,
                 ),
               ),
               child: InkWell(
                 onTap: () => context.push('/node/${widget.item.uuid}'),
                 borderRadius: context.borderRadiusL,
-                hoverColor: const Color(0xFFD10047).withOpacity(0.02),
-                splashColor: const Color(0xFFD10047).withOpacity(0.08),
+                hoverColor: const Color(0xFFD10047).withValues(alpha: 0.02),
+                splashColor: const Color(0xFFD10047).withValues(alpha: 0.08),
                 child: Padding(
                   padding: context.cardPadding,
                   child: Row(
@@ -75,7 +77,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD10047).withOpacity(0.08),
+                          color: const Color(0xFFD10047).withValues(alpha: 0.08),
                           borderRadius: context.borderRadiusM,
                         ),
                         child: Center(
@@ -97,7 +99,6 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                               minFontSize: 12,
                               overflow: TextOverflow.ellipsis,
                               style: context.titleStyle.copyWith(
-                                fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onSurface,
                               ),
                             ),
@@ -114,20 +115,19 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isDark 
-                                          ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5) 
+                                          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5) 
                                           : const Color(0xFFFFF5F8),
                                       borderRadius: context.borderRadiusS,
                                       border: Border.all(
                                         color: isDark 
-                                            ? theme.colorScheme.outline.withOpacity(0.1) 
-                                            : const Color(0xFFF8D7E3).withOpacity(0.6),
+                                            ? theme.colorScheme.outline.withValues(alpha: 0.1) 
+                                            : const Color(0xFFF8D7E3).withValues(alpha: 0.6),
                                         width: 0.8,
                                       ),
                                     ),
                                     child: Text(
                                       path,
-                                      style: context.bodySmallStyle.copyWith(
-                                        fontSize: 10,
+                                      style: context.captionStyle.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: isDark ? theme.colorScheme.onSurface : const Color(0xFF374151),
                                       ),
@@ -140,18 +140,17 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: isDark 
-                                        ? theme.colorScheme.surfaceContainer.withOpacity(0.8) 
+                                        ? theme.colorScheme.surfaceContainer.withValues(alpha: 0.8) 
                                         : const Color(0xFFECEFF1),
                                     borderRadius: context.borderRadiusS,
                                     border: Border.all(
-                                      color: isDark ? theme.colorScheme.outline.withOpacity(0.1) : const Color(0xFFCFD8DC),
+                                      color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.1) : const Color(0xFFCFD8DC),
                                       width: 0.8,
                                     ),
                                   ),
                                   child: Text(
-                                    _getTimeAgo(widget.item.viewedAt),
-                                    style: context.bodySmallStyle.copyWith(
-                                      fontSize: 10,
+                                    widget.customTimeText ?? _getTimeAgo(widget.item.viewedAt),
+                                    style: context.captionStyle.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),

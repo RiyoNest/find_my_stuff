@@ -28,7 +28,7 @@ class AppDrawer extends ConsumerWidget {
     final currentTheme = ref.watch(themeModeProvider);
 
     void onThemeChanged(ThemeMode mode) {
-      ref.read(themeModeProvider.notifier).state = mode;
+      ref.read(themeModeProvider.notifier).setThemeMode(mode);
     }
 
     return Drawer(

@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 
 class PhotoViewerPage extends StatelessWidget {
   final String imagePath;
@@ -36,12 +37,13 @@ class PhotoViewerPage extends StatelessWidget {
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
         foregroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(
           itemName,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: context.titleStyle.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -52,7 +54,9 @@ class PhotoViewerPage extends StatelessWidget {
               tooltip: 'Share Photo',
               onPressed: () async {
                 final resolved = PhotoStorageService.resolvePath(imagePath);
-                await Share.shareXFiles([XFile(resolved)]);
+                await SharePlus.instance.share(ShareParams(
+                  files: [XFile(resolved)],
+                ));
               },
             ),
           IconButton(
@@ -86,9 +90,9 @@ class PhotoViewerPage extends StatelessWidget {
               color: Colors.white54,
             ),
             const SizedBox(height: RAppSpacing.sm),
-            const Text(
+            Text(
               'Image not found',
-              style: TextStyle(color: Colors.white54, fontSize: 16),
+              style: context.subtitleStyle.copyWith(color: Colors.white54),
             ),
             const SizedBox(height: RAppSpacing.md),
             OutlinedButton(

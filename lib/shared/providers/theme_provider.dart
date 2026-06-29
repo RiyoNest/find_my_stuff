@@ -13,22 +13,25 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('sharedPreferencesProvider must be overridden inside the ProviderScope');
 });
 
-/// Reactive provider that handles loading and persisting the selected ThemeMode.
-final themeModeProvider = StateProvider<ThemeMode>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  
-  // Auto-save any future changes to SharedPreferences
-  ref.listenSelf((previous, next) {
-    if (next != previous) {
-      prefs.setInt('theme_mode', next.index);
+/// Notifier that handles loading and persisting the selected ThemeMode.
+class ThemeModeNotifier extends Notifier<ThemeMode> {
+  @override
+  ThemeMode build() {
+    // Only read SharedPreferences (no watch/subscription required)
+    final prefs = ref.read(sharedPreferencesProvider);
+    final savedIndex = prefs.getInt('theme_mode');
+    if (savedIndex != null && savedIndex >= 0 && savedIndex < ThemeMode.values.length) {
+      return ThemeMode.values[savedIndex];
     }
-  });
-
-  // Load the initial value from SharedPreferences
-  final savedIndex = prefs.getInt('theme_mode');
-  if (savedIndex != null && savedIndex >= 0 && savedIndex < ThemeMode.values.length) {
-    return ThemeMode.values[savedIndex];
+    return ThemeMode.system;
   }
-  
-  return ThemeMode.system;
-});
+
+  void setThemeMode(ThemeMode mode) {
+    state = mode;
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setInt('theme_mode', mode.index);
+  }
+}
+
+/// Reactive provider that handles loading and persisting the selected ThemeMode.
+final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);

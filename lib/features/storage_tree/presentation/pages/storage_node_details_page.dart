@@ -206,12 +206,12 @@ class _StorageNodeDetailsPageState
             items: [
               SpeedDialItem(
                 icon: Icons.view_agenda_outlined,
-                label: 'Add Section',
+                label: 'New Section',
                 onTap: () => _addChildNodeWithType(node, NodeType.section),
               ),
               SpeedDialItem(
                 icon: Icons.inventory_2_outlined,
-                label: 'Add Container',
+                label: 'New Container',
                 onTap: () => _addChildNodeWithType(node, NodeType.container),
               ),
               SpeedDialItem(
@@ -237,7 +237,7 @@ class _StorageNodeDetailsPageState
                       'Add Item',
                       maxLines: 1,
                       minFontSize: 11,
-                      style: context.buttonStyle.copyWith(fontWeight: FontWeight.bold),
+                      style: context.buttonStyle,
                     ),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(120, 48),
@@ -286,7 +286,7 @@ class _StorageNodeDetailsPageState
                         side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                       ),
                       elevation: 2,
-                      shadowColor: Colors.black.withOpacity(0.1),
+                      shadowColor: Colors.black.withValues(alpha: 0.1),
                       child: InkWell(
                         onTap: () => context.push('/node/${child.uuid}'),
                         hoverColor: const Color(0xFFFFF5F8),
@@ -319,7 +319,6 @@ class _StorageNodeDetailsPageState
                                   AutoSizeText(
                                     child.name,
                                     style: context.titleStyle.copyWith(
-                                      fontWeight: FontWeight.bold,
                                       color: theme.colorScheme.onSurface,
                                     ),
                                     maxLines: 1,
@@ -329,9 +328,8 @@ class _StorageNodeDetailsPageState
                                   SizedBox(height: context.spacingXS),
                                   Text(
                                     label,
-                                    style: context.bodySmallStyle.copyWith(
+                                    style: context.labelStyle.copyWith(
                                       color: color,
-                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
@@ -349,7 +347,7 @@ class _StorageNodeDetailsPageState
               return ListView.separated(
                 padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
                 itemCount: processed.length,
-                separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
+                separatorBuilder: (_, _) => SizedBox(height: context.spacingS),
                 itemBuilder: (context, index) {
                   final child = processed[index];
                   return _ChildNodeCard(
@@ -413,7 +411,7 @@ class _ChildNodeCard extends StatelessWidget {
                   borderRadius: context.borderRadiusS,
                   placeholder: Container(
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       borderRadius: context.borderRadiusS,
                     ),
                     child: Icon(icon, color: color, size: context.iconSmall + 4),
@@ -428,7 +426,6 @@ class _ChildNodeCard extends StatelessWidget {
                     AutoSizeText(
                       node.name,
                       style: context.titleStyle.copyWith(
-                        fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       ),
                       maxLines: 1,
@@ -442,7 +439,7 @@ class _ChildNodeCard extends StatelessWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: context.borderRadiusS,
                       ),
                       child: Text(
