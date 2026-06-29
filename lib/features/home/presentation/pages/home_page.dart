@@ -422,24 +422,36 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ),
 
-                  SizedBox(height: context.spacingM),
+                  // Spacing between SearchBar and the next section (or Expiry banner) is 24dp.
+                  const SizedBox(height: 24),
 
                   // Merged expired + expiring urgency banner.
                   expiredAsync.when(
                     data: (expired) => expiringAsync.when(
-                      data: (expiring) => ExpiryAlertBanner(
-                        expiredCount: expired.length,
-                        expiringCount: expiring.length,
-                        onTapExpired: () =>
-                            context.push('/dashboard/expired'),
-                        onTapExpiring: () =>
-                            context.push('/dashboard/expiring'),
-                      ),
-                      loading: () => const SizedBox(),
-                      error: (_, _) => const SizedBox(),
+                      data: (expiring) {
+                        if (expired.isEmpty && expiring.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ExpiryAlertBanner(
+                              expiredCount: expired.length,
+                              expiringCount: expiring.length,
+                              onTapExpired: () =>
+                                  context.push('/dashboard/expired'),
+                              onTapExpiring: () =>
+                                  context.push('/dashboard/expiring'),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
-                    loading: () => const SizedBox(),
-                    error: (_, _) => const SizedBox(),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
                   ),
 
                   roomsAsync.when(
@@ -575,6 +587,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             height: context.dashboardCardHeight,
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
+                              padding: EdgeInsets.zero,
                               itemCount: rooms.length + 1,
                               separatorBuilder: (_, _) => const SizedBox(width: 12),
                               itemBuilder: (context, index) {
@@ -625,8 +638,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                               leading: const Icon(Icons.insights_outlined),
                               child: Padding(
                                 padding: EdgeInsets.only(
-                                  left: context.spacingM,
-                                  right: context.spacingM,
                                   bottom: context.spacingM,
                                 ),
                                 child: expiredAsync.when(
@@ -641,6 +652,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                         children: [
                                           Card(
                                             elevation: 1,
+                                            margin: EdgeInsets.zero,
                                             shape: RoundedRectangleBorder(
                                               borderRadius: context.borderRadiusL,
                                               side: BorderSide(
@@ -803,10 +815,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   ),
                                 );
                               }
-                              return ListView.builder(
+                              return ListView.separated(
                                 shrinkWrap: true,
+                                padding: EdgeInsets.zero,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: list.length,
+                                separatorBuilder: (_, _) => const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
                                   final item = list[index];
                                   return SlideInFromLeft(
@@ -862,10 +876,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 );
                               }
 
-                              return ListView.builder(
+                              return ListView.separated(
                                 shrinkWrap: true,
+                                padding: EdgeInsets.zero,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: sorted.length,
+                                separatorBuilder: (_, _) => const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
                                   final item = sorted[index];
                                   return SlideInFromLeft(

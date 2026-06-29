@@ -79,39 +79,41 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
   }
 
   Future<void> _pickFromGallery() async {
-    final granted = await PermissionRequestHelper.request(
+    await PermissionRequestHelper.request(
       context: context,
       service: ref.read(permissionServiceProvider),
       type: AppPermissionType.gallery,
+      onGranted: () async {
+        final file = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 80,
+        );
+        if (file == null) return;
+        if (!context.mounted) return;
+        final saved = await PhotoStorageService.savePhoto(file.path);
+        _tempPhotoPaths.add(saved);
+        setState(() => _photoPath = saved);
+      },
     );
-    if (!granted) return;
-
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
-    if (file == null) return;
-    final saved = await PhotoStorageService.savePhoto(file.path);
-    _tempPhotoPaths.add(saved);
-    setState(() => _photoPath = saved);
   }
 
   Future<void> _takePhoto() async {
-    final granted = await PermissionRequestHelper.request(
+    await PermissionRequestHelper.request(
       context: context,
       service: ref.read(permissionServiceProvider),
       type: AppPermissionType.camera,
+      onGranted: () async {
+        final file = await _picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 80,
+        );
+        if (file == null) return;
+        if (!context.mounted) return;
+        final saved = await PhotoStorageService.savePhoto(file.path);
+        _tempPhotoPaths.add(saved);
+        setState(() => _photoPath = saved);
+      },
     );
-    if (!granted) return;
-
-    final file = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
-    );
-    if (file == null) return;
-    final saved = await PhotoStorageService.savePhoto(file.path);
-    _tempPhotoPaths.add(saved);
-    setState(() => _photoPath = saved);
   }
 
   Future<void> _selectExpiryDate() async {

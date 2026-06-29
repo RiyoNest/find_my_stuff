@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:find_my_stuff/shared/models/permission_result.dart';
 import 'package:find_my_stuff/shared/services/permission_service.dart';
@@ -91,13 +92,63 @@ class PermissionDialog extends StatelessWidget {
   }
 }
 
+class _LifecycleObserver extends WidgetsBindingObserver {
+  final VoidCallback onResume;
+  bool _wasPaused = false;
+
+  _LifecycleObserver({required this.onResume});
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _wasPaused = true;
+    } else if (state == AppLifecycleState.resumed && _wasPaused) {
+      onResume();
+    }
+  }
+}
+
 class PermissionRequestHelper {
+  static bool _permissionFlowRunning = false;
+
   static Future<bool> request({
     required BuildContext context,
     required PermissionService service,
     required AppPermissionType type,
-    VoidCallback? onGranted,
+    Future<void> Function()? onGranted,
   }) async {
+    // Phase 5: Prevent concurrent permission requests
+    if (_permissionFlowRunning) {
+      return false;
+    }
+    _permissionFlowRunning = true;
+
+    // Execution guard to ensure callback runs exactly once
+    bool onGrantedExecuted = false;
+    Future<void> safeExecuteCallback() async {
+      if (onGrantedExecuted) return;
+      onGrantedExecuted = true;
+      if (onGranted != null) {
+        // Wait a microtask to allow any pending UI transitions to schedule
+        await Future.delayed(Duration.zero);
+        // Mounted Safety
+        if (context.mounted) {
+          await onGranted();
+        }
+      }
+    }
+
+    Future<PermissionResult> runCheck() {
+      switch (type) {
+        case AppPermissionType.camera:
+          return service.checkCameraPermission();
+        case AppPermissionType.gallery:
+          return service.checkGalleryPermission();
+        case AppPermissionType.microphone:
+          return service.checkMicrophonePermission();
+      }
+    }
+
     Future<PermissionResult> runRequest() {
       switch (type) {
         case AppPermissionType.camera:
@@ -109,54 +160,65 @@ class PermissionRequestHelper {
       }
     }
 
-    final result = await runRequest();
+    try {
+      // 1. Initial Status Check (checks status without prompting)
+      final initialCheck = await runCheck();
 
-    if (result.isGranted) {
-      onGranted?.call();
-      return true;
-    }
+      // Already Granted
+      if (initialCheck.isGranted) {
+        await safeExecuteCallback();
+        return true;
+      }
 
-    if (result.shouldOpenSettings) {
-      if (context.mounted) {
+      // 2. Permanently Denied Check
+      if (initialCheck.shouldOpenSettings) {
+        if (!context.mounted) return false;
         final openSettings = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
-          builder: (context) => PermissionDialog(type: type, isPermanentlyDenied: true),
+          builder: (dialogCtx) => PermissionDialog(type: type, isPermanentlyDenied: true),
         );
+
         if (openSettings == true) {
-          await service.openSettings();
-        }
-      }
-      return false;
-    }
+          final completer = Completer<void>();
+          final observer = _LifecycleObserver(onResume: () {
+            if (!completer.isCompleted) completer.complete();
+          });
+          WidgetsBinding.instance.addObserver(observer);
 
-    if (context.mounted) {
-      final allow = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => PermissionDialog(type: type, isPermanentlyDenied: false),
-      );
+          try {
+            await service.openSettings();
+            await completer.future;
+          } finally {
+            WidgetsBinding.instance.removeObserver(observer);
+          }
 
-      if (allow == true) {
-        final retryResult = await runRequest();
-        if (retryResult.isGranted) {
-          onGranted?.call();
-          return true;
-        } else if (retryResult.shouldOpenSettings) {
-          if (context.mounted) {
-            final openSettings = await showDialog<bool>(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => PermissionDialog(type: type, isPermanentlyDenied: true),
-            );
-            if (openSettings == true) {
-              await service.openSettings();
+          final afterSettingsCheck = await runCheck();
+          if (afterSettingsCheck.isGranted) {
+            if (context.mounted) {
+              await safeExecuteCallback();
+              return true;
             }
           }
         }
+        return false;
       }
-    }
 
-    return false;
+      // 3. Denied / First Time Check (Requestable)
+      // Do NOT show a custom explanation dialog. Immediately request permission.
+      final result = await runRequest();
+      if (result.isGranted) {
+        if (context.mounted) {
+          await safeExecuteCallback();
+          return true;
+        }
+      }
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint('PermissionRequestHelper: Exception occurred: $e\n$stackTrace');
+      return false;
+    } finally {
+      _permissionFlowRunning = false;
+    }
   }
 }

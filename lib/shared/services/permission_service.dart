@@ -9,11 +9,74 @@ class PermissionService {
   }
 
   Future<PermissionResult> requestGalleryPermission() async {
-    return _requestPermission(ph.Permission.photos, 'Gallery');
+    final results = await [
+      ph.Permission.photos,
+      ph.Permission.storage,
+    ].request();
+
+    final photosStatus = results[ph.Permission.photos] ?? ph.PermissionStatus.denied;
+    final storageStatus = results[ph.Permission.storage] ?? ph.PermissionStatus.denied;
+
+    final granted = photosStatus.isGranted ||
+        photosStatus.isLimited ||
+        storageStatus.isGranted ||
+        storageStatus.isLimited;
+
+    final permanentlyDenied = photosStatus.isPermanentlyDenied || storageStatus.isPermanentlyDenied;
+
+    return PermissionResult(
+      state: granted
+          ? PermissionState.granted
+          : (permanentlyDenied ? PermissionState.permanentlyDenied : PermissionState.denied),
+      isGranted: granted,
+      shouldOpenSettings: permanentlyDenied,
+      message: 'Gallery permission request completed.',
+    );
   }
 
   Future<PermissionResult> requestMicrophonePermission() async {
     return _requestPermission(ph.Permission.microphone, 'Microphone');
+  }
+
+  Future<PermissionResult> checkCameraPermission() async {
+    return _checkPermission(ph.Permission.camera, 'Camera');
+  }
+
+  Future<PermissionResult> checkGalleryPermission() async {
+    final photosStatus = await ph.Permission.photos.status;
+    final storageStatus = await ph.Permission.storage.status;
+
+    final granted = photosStatus.isGranted ||
+        photosStatus.isLimited ||
+        storageStatus.isGranted ||
+        storageStatus.isLimited;
+
+    final permanentlyDenied = photosStatus.isPermanentlyDenied || storageStatus.isPermanentlyDenied;
+
+    return PermissionResult(
+      state: granted
+          ? PermissionState.granted
+          : (permanentlyDenied ? PermissionState.permanentlyDenied : PermissionState.denied),
+      isGranted: granted,
+      shouldOpenSettings: permanentlyDenied,
+      message: 'Gallery permission status checked.',
+    );
+  }
+
+  Future<PermissionResult> checkMicrophonePermission() async {
+    return _checkPermission(ph.Permission.microphone, 'Microphone');
+  }
+
+  Future<PermissionResult> _checkPermission(ph.Permission permission, String typeName) async {
+    final status = await permission.status;
+    final isGranted = status.isGranted || status.isLimited;
+    final shouldOpenSettings = status.isPermanentlyDenied;
+    return PermissionResult(
+      state: _mapStatus(status),
+      isGranted: isGranted,
+      shouldOpenSettings: shouldOpenSettings,
+      message: '$typeName permission status is ${status.name}.',
+    );
   }
 
   Future<void> openSettings() async {
