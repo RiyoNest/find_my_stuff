@@ -13,6 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
+import 'package:find_my_stuff/shared/widgets/loading_state_widget.dart';
+import 'package:find_my_stuff/shared/widgets/error_state_widget.dart';
 
 class ArchivedItemsPage extends ConsumerStatefulWidget {
   const ArchivedItemsPage({super.key});
@@ -52,32 +54,10 @@ class _ArchivedItemsPageState extends ConsumerState<ArchivedItemsPage> {
       initialSearchQuery: _searchQuery,
       breadcrumbs: segments,
       child: archivedAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: context.pagePadding,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: context.iconXL,
-                  color: themeErrorColor(context),
-                ),
-                SizedBox(height: context.spacingS),
-                Text(
-                  "Couldn't load archived items",
-                  style: context.titleStyle,
-                ),
-                SizedBox(height: context.spacingM),
-                TextButton.icon(
-                  onPressed: () => ref.invalidate(archivedItemsProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: Text('Retry', style: context.buttonStyle),
-                ),
-              ],
-            ),
-          ),
+        loading: () => const LoadingStateWidget(type: LoadingType.list),
+        error: (e, _) => ErrorStateWidget(
+          description: "We couldn't retrieve your archived items.",
+          onRetry: () => ref.invalidate(archivedItemsProvider),
         ),
         data: (items) {
           if (items.isEmpty) {
@@ -233,7 +213,7 @@ class _ArchivedItemTile extends ConsumerWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: RAppColors.accent.withOpacity(0.12),
+                        color: RAppColors.accent.withValues(alpha: 0.12),
                         borderRadius: context.borderRadiusS,
                       ),
                       child: Text(

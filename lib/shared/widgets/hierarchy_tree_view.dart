@@ -91,7 +91,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
     );
 
     final activeBgColor = isActive
-        ? (isDark ? theme.colorScheme.primary.withOpacity(0.15) : const Color(0xFFFFF5F8))
+        ? (isDark ? theme.colorScheme.primary.withValues(alpha: 0.15) : const Color(0xFFFFF5F8))
         : Colors.transparent;
 
     if (isTerminal) {
@@ -129,7 +129,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
           trailing: Icon(
             Icons.chevron_right_rounded,
             size: 16,
-            color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+            color: isActive ? const Color(0xFFD10047) : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
           ),
           onTap: () => context.push('/node/${node.uuid}'),
         ),
@@ -231,7 +231,7 @@ class _TreeNodeWidgetState extends ConsumerState<TreeNodeWidget> {
                     decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(
-                          color: isDark ? theme.colorScheme.outline.withOpacity(0.3) : const Color(0xFFF8D7E3),
+                          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.3) : const Color(0xFFF8D7E3),
                           width: 1.0,
                         ),
                       ),

@@ -52,17 +52,16 @@ import 'package:find_my_stuff/shared/widgets/app_drawer.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/widgets/dashboard_stat_card.dart';
 import 'package:find_my_stuff/shared/widgets/expiry_alert_banner.dart';
-import 'package:find_my_stuff/shared/widgets/home_async_list.dart';
 import 'package:find_my_stuff/shared/widgets/item_activity_tile.dart';
 import 'package:find_my_stuff/shared/widgets/room_card.dart';
+import 'package:find_my_stuff/shared/widgets/loading_state_widget.dart';
+import 'package:find_my_stuff/shared/widgets/error_state_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-
-enum _ActivityFilter { recent, forgotten }
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -77,7 +76,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   late final List<PlaceEntity> _allPlaces;
   late PlaceEntity currentPlace;
 
-  _ActivityFilter _activityFilter = _ActivityFilter.recent;
   final ValueNotifier<bool> _isFabExtended = ValueNotifier<bool>(true);
 
   @override
@@ -443,10 +441,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                             context.push('/dashboard/expiring'),
                       ),
                       loading: () => const SizedBox(),
-                      error: (_, __) => const SizedBox(),
+                      error: (_, _) => const SizedBox(),
                     ),
                     loading: () => const SizedBox(),
-                    error: (_, __) => const SizedBox(),
+                    error: (_, _) => const SizedBox(),
                   ),
 
                   roomsAsync.when(
@@ -493,7 +491,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               height: 100,
                               child: Center(child: CircularProgressIndicator()),
                             ),
-                            error: (_, __) => const SizedBox(),
+                            error: (_, _) => const SizedBox(),
                             data: (stats) => FadeInScale(
                               duration: const Duration(milliseconds: 350),
                               child: SizedBox(
@@ -583,7 +581,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               itemCount: rooms.length + 1,
-                              separatorBuilder: (_, __) => SizedBox(width: context.spacingS),
+                              separatorBuilder: (_, _) => SizedBox(width: context.spacingS),
                               itemBuilder: (context, index) {
                                 if (index == rooms.length) {
                                   return SizedBox(
@@ -767,10 +765,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       );
                                     },
                                     loading: () => const SizedBox(),
-                                    error: (_, __) => const SizedBox(),
+                                    error: (_, _) => const SizedBox(),
                                   ),
                                   loading: () => const SizedBox(),
-                                  error: (_, __) => const SizedBox(),
+                                  error: (_, _) => const SizedBox(),
                                 ),
                               ),
                             ),
@@ -778,70 +776,114 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                           SizedBox(height: context.spacingL),
 
-                          Text('Activity', style: context.titleStyle),
-                          SizedBox(height: context.spacingS + 4),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SegmentedButton<_ActivityFilter>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: _ActivityFilter.recent,
-                                  label: Text('Recent'),
-                                  icon: Icon(Icons.history, size: 16),
-                                ),
-                                ButtonSegment(
-                                  value: _ActivityFilter.forgotten,
-                                  label: Text('Forgotten'),
-                                  icon: Icon(Icons.visibility_off_outlined,
-                                      size: 16),
-                                ),
-                              ],
-                              selected: {_activityFilter},
-                              onSelectionChanged: (selection) {
-                                setState(() => _activityFilter = selection.first);
-                              },
-                              style: ButtonStyle(
-                                backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return const Color(0xFFD10047);
-                                  }
-                                  return theme.colorScheme.surfaceContainer;
-                                }),
-                                foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return Colors.white;
-                                  }
-                                  return theme.colorScheme.onSurface;
-                                }),
-                              ),
-                            ),
+                          // Section 4: Continue Where You Left Off
+                          Text(
+                            'Continue Where You Left Off',
+                            style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(height: context.spacingS + 4),
+                          const SizedBox(height: 8),
+                          recentAsync.when(
+                            loading: () => const LoadingStateWidget(type: LoadingType.list),
+                            error: (err, _) => ErrorStateWidget(
+                              description: "We couldn't retrieve your recently viewed items.",
+                              onRetry: () => ref.invalidate(recentlyViewedProvider),
+                            ),
+                            data: (items) {
+                              final list = items.take(5).toList();
+                              if (list.isEmpty) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(context.spacingM),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                    borderRadius: context.borderRadiusM,
+                                  ),
+                                  child: Text(
+                                    'Items you recently opened will appear here.',
+                                    style: context.bodySmallStyle.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: list.length,
+                                itemBuilder: (context, index) {
+                                  final item = list[index];
+                                  return SlideInFromLeft(
+                                    delayMilliseconds: index * 60,
+                                    child: ItemActivityTile(
+                                      item: item,
+                                      customTimeText: _getRelativeViewedTime(item.viewedAt),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
 
-                          if (_activityFilter == _ActivityFilter.recent)
-                            HomeAsyncList(
-                              asyncValue: recentAsync,
-                              emptyMessage: 'No recently viewed items',
-                              emptyIcon: Icons.history,
-                              onRetry: () =>
-                                  ref.invalidate(recentlyViewedProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
+                          SizedBox(height: context.spacingL),
+
+                          // Section 5: Forgotten Items
+                          Text(
+                            'Forgotten Items',
+                            style: context.titleStyle.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          forgottenAsync.when(
+                            loading: () => const LoadingStateWidget(type: LoadingType.list),
+                            error: (err, _) => ErrorStateWidget(
+                              description: "We couldn't retrieve your forgotten items.",
+                              onRetry: () => ref.invalidate(forgottenItemsProvider),
                             ),
-                          if (_activityFilter == _ActivityFilter.forgotten)
-                            HomeAsyncList(
-                              asyncValue: forgottenAsync,
-                              emptyMessage: 'Nothing forgotten - nice!',
-                              emptyIcon: Icons.visibility_off_outlined,
-                              onRetry: () =>
-                                  ref.invalidate(forgottenItemsProvider),
-                              itemBuilder: (_, item, index) => SlideInFromLeft(
-                                delayMilliseconds: index * 60,
-                                child: ItemActivityTile(item: item),
-                              ),
-                            ),
+                            data: (items) {
+                              final sorted = List<StorageNodeEntity>.from(items)
+                                ..sort((a, b) {
+                                  final dateA = a.viewedAt ?? a.createdAt;
+                                  final dateB = b.viewedAt ?? b.createdAt;
+                                  return dateA.compareTo(dateB);
+                                });
+
+                              if (sorted.isEmpty) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(context.spacingM),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                    borderRadius: context.borderRadiusM,
+                                  ),
+                                  child: Text(
+                                    'Items left untouched for a long time will appear here.',
+                                    style: context.bodySmallStyle.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: sorted.length,
+                                itemBuilder: (context, index) {
+                                  final item = sorted[index];
+                                  return SlideInFromLeft(
+                                    delayMilliseconds: index * 60,
+                                    child: ItemActivityTile(
+                                      item: item,
+                                      customTimeText: _getForgottenContextText(item),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                         ],
                       );
                     },
@@ -855,6 +897,45 @@ class _HomePageState extends ConsumerState<HomePage> {
     ),
   );
 }
+
+  String _getRelativeViewedTime(DateTime? date) {
+    if (date == null) return 'Viewed long ago';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'Viewed just now';
+    } else if (difference.inMinutes < 60) {
+      final m = difference.inMinutes;
+      return 'Viewed $m ${m == 1 ? 'minute' : 'minutes'} ago';
+    } else if (difference.inHours < 24) {
+      final h = difference.inHours;
+      return 'Viewed $h ${h == 1 ? 'hour' : 'hours'} ago';
+    } else {
+      final days = difference.inDays;
+      if (days == 1) return 'Viewed yesterday';
+      return 'Viewed $days days ago';
+    }
+  }
+
+  String _getForgottenContextText(StorageNodeEntity item) {
+    final date = item.viewedAt ?? item.createdAt;
+    final diff = DateTime.now().difference(date);
+    final hasOpened = item.viewedAt != null;
+
+    if (diff.inDays >= 365) {
+      return 'Stored over a year ago';
+    }
+    final months = (diff.inDays / 30).floor();
+    if (months >= 1) {
+      if (hasOpened) {
+        return 'Last viewed $months ${months == 1 ? 'month' : 'months'} ago';
+      } else {
+        return 'Haven\'t opened for $months ${months == 1 ? 'month' : 'months'}';
+      }
+    }
+    return 'Last viewed ${diff.inDays} days ago';
+  }
 }
 
 class _AddRoomCard extends StatelessWidget {

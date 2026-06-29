@@ -99,10 +99,12 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
     } else {
       setState(() => _isListening = true);
       await _speech.listen(
-        localeId: "en_IN",
-        partialResults: true,
-        listenFor: const Duration(minutes: 1),
-        pauseFor: const Duration(seconds: 3),
+        listenOptions: SpeechListenOptions(
+          localeId: "en_IN",
+          partialResults: true,
+          listenFor: const Duration(minutes: 1),
+          pauseFor: const Duration(seconds: 3),
+        ),
         onResult: (result) {
           final words = result.recognizedWords;
           if (mounted) {

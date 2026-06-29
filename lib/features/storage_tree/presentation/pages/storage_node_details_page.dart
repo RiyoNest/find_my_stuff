@@ -286,7 +286,7 @@ class _StorageNodeDetailsPageState
                         side: const BorderSide(color: Color(0xFFF8D7E3), width: 0.8),
                       ),
                       elevation: 2,
-                      shadowColor: Colors.black.withOpacity(0.1),
+                      shadowColor: Colors.black.withValues(alpha: 0.1),
                       child: InkWell(
                         onTap: () => context.push('/node/${child.uuid}'),
                         hoverColor: const Color(0xFFFFF5F8),
@@ -347,7 +347,7 @@ class _StorageNodeDetailsPageState
               return ListView.separated(
                 padding: EdgeInsets.symmetric(horizontal: context.spacingM, vertical: context.spacingS),
                 itemCount: processed.length,
-                separatorBuilder: (_, __) => SizedBox(height: context.spacingS),
+                separatorBuilder: (_, _) => SizedBox(height: context.spacingS),
                 itemBuilder: (context, index) {
                   final child = processed[index];
                   return _ChildNodeCard(
@@ -411,7 +411,7 @@ class _ChildNodeCard extends StatelessWidget {
                   borderRadius: context.borderRadiusS,
                   placeholder: Container(
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       borderRadius: context.borderRadiusS,
                     ),
                     child: Icon(icon, color: color, size: context.iconSmall + 4),
@@ -439,7 +439,7 @@ class _ChildNodeCard extends StatelessWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: context.borderRadiusS,
                       ),
                       child: Text(

@@ -175,7 +175,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
         width: 160,
         height: 1.5,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.8),
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(1),
         ),
       ),
@@ -204,7 +204,7 @@ class _SpeedDialFABState extends State<SpeedDialFAB> with SingleTickerProviderSt
                 animation: _expandAnimation,
                 builder: (context, child) {
                   return Container(
-                    color: Colors.black.withOpacity(_expandAnimation.value * 0.4),
+                    color: Colors.black.withValues(alpha: _expandAnimation.value * 0.4),
                   );
                 },
               ),

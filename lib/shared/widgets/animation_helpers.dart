@@ -201,9 +201,9 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
                 _shimmerController.value + 0.3,
               ],
               colors: [
-                Colors.grey.withOpacity(0.3),
-                Colors.grey.withOpacity(0.5),
-                Colors.grey.withOpacity(0.3),
+                Colors.grey.withValues(alpha: 0.3),
+                Colors.grey.withValues(alpha: 0.5),
+                Colors.grey.withValues(alpha: 0.3),
               ],
             ).createShader(bounds);
           },
@@ -308,7 +308,7 @@ class _AnimatedExpandableSectionState extends State<AnimatedExpandableSection>
         ClipRect(
           child: SizeTransition(
             sizeFactor: _heightAnimation,
-            axisAlignment: -1.0,
+            alignment: Alignment.topCenter,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: widget.child,

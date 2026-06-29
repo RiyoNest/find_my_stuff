@@ -17,6 +17,7 @@ import 'package:find_my_stuff/core/utils/validation_helpers.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
+import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -185,17 +186,26 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Item')),
+      appBar: AppBar(
+        title: Text(
+          'Edit Item',
+          style: context.titleStyle.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        scrolledUnderElevation: 0,
+      ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(RAppSpacing.md),
+          padding: context.pagePadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Item Details ──────────────────────────────────────
-              Text('Details', style: theme.textTheme.titleLarge),
-              const SizedBox(height: RAppSpacing.md),
+              Text('Details', style: context.titleStyle.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
 
               TextFormField(
                 controller: _nameController,
