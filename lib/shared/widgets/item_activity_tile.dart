@@ -53,7 +53,7 @@ class _ItemActivityTileState extends ConsumerState<ItemActivityTile> {
           child: Tooltip(
             message: 'View details for ${widget.item.name}',
             child: Card(
-              margin: EdgeInsets.symmetric(vertical: context.spacingXS),
+              margin: EdgeInsets.zero,
               elevation: _isHovered ? 4 : 1,
               shape: RoundedRectangleBorder(
                 borderRadius: context.borderRadiusL,

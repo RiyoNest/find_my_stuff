@@ -112,7 +112,7 @@ class SearchResultTile extends ConsumerWidget {
                       loading: () => Text('Loading path...', style: context.bodySmallStyle),
                       error: (_, _) => const SizedBox(),
                       data: (path) {
-                        final text = path.map((e) => e.name).join(' › ');
+                        final text = path.displayString;
                         return Text(
                           text.isNotEmpty ? text : 'No location path',
                           style: context.bodySmallStyle.copyWith(

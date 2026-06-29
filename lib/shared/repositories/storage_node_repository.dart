@@ -1,6 +1,8 @@
 import 'package:find_my_stuff/core/database/objectbox_service.dart';
 import 'package:find_my_stuff/objectbox.g.dart';
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
+import 'package:find_my_stuff/shared/entities/room_entity.dart';
+import 'package:find_my_stuff/shared/models/storage_path.dart';
 import 'package:path/path.dart' as p;
 import 'package:find_my_stuff/core/services/photo_storage_service.dart';
 
@@ -8,6 +10,14 @@ import '../enums/node_type.dart';
 
 class StorageNodeRepository {
   final box = ObjectBoxService.store.box<StorageNodeEntity>();
+
+  final Map<String, StoragePath> _pathCache = {};
+  final Map<String, RoomEntity> _roomCache = {};
+
+  void clearCache() {
+    _pathCache.clear();
+    _roomCache.clear();
+  }
 
   StorageNodeEntity? _migrateNode(StorageNodeEntity? node) {
     if (node == null) return null;
@@ -172,10 +182,139 @@ class StorageNodeRepository {
     return path;
   }
 
-  String buildPath(StorageNodeEntity node) {
-    final path = getPathToRoot(node);
+  StoragePath getStoragePath(StorageNodeEntity node) {
+    if (_pathCache.containsKey(node.uuid)) {
+      return _pathCache[node.uuid]!;
+    }
 
-    return path.map((e) => e.name).join(' > ');
+    final segments = <StoragePathSegment>[];
+
+    StorageNodeEntity? current = node;
+
+    while (current != null) {
+      if (current.uuid != node.uuid || current.nodeType != NodeType.item.name) {
+        StoragePathSegmentType? type;
+        if (current.nodeType == NodeType.storageLocation.name) {
+          type = StoragePathSegmentType.storageLocation;
+        } else if (current.nodeType == NodeType.section.name) {
+          type = StoragePathSegmentType.section;
+        } else if (current.nodeType == NodeType.container.name) {
+          type = StoragePathSegmentType.container;
+        }
+
+        if (type != null) {
+          segments.insert(
+            0,
+            StoragePathSegment(
+              uuid: current.uuid,
+              name: current.name,
+              type: type,
+            ),
+          );
+        }
+      }
+
+      if (current.parentUuid == null) {
+        break;
+      }
+
+      current = getByUuid(current.parentUuid!);
+    }
+
+    final roomUuid = node.roomUuid;
+    RoomEntity? room = _roomCache[roomUuid];
+    if (room == null) {
+      final roomBox = ObjectBoxService.store.box<RoomEntity>();
+      final query = roomBox.query(RoomEntity_.uuid.equals(roomUuid)).build();
+      room = query.findFirst();
+      query.close();
+      if (room != null) {
+        _roomCache[roomUuid] = room;
+      }
+    }
+
+    if (room != null) {
+      segments.insert(
+        0,
+        StoragePathSegment(
+          uuid: room.uuid,
+          name: room.name,
+          type: StoragePathSegmentType.room,
+        ),
+      );
+    }
+
+    final path = StoragePath(segments);
+    _pathCache[node.uuid] = path;
+    return path;
+  }
+
+  StoragePath getDestinationPath(StorageNodeEntity node) {
+    return getStoragePath(node);
+  }
+
+  int countChildLocations(String uuid) {
+    final query = box
+        .query(
+          StorageNodeEntity_.parentUuid.equals(uuid) &
+              StorageNodeEntity_.isArchived.equals(false) &
+              StorageNodeEntity_.nodeType.equals(NodeType.storageLocation.name),
+        )
+        .build();
+    final count = query.count();
+    query.close();
+    return count;
+  }
+
+  int countChildSections(String uuid) {
+    final query = box
+        .query(
+          StorageNodeEntity_.parentUuid.equals(uuid) &
+              StorageNodeEntity_.isArchived.equals(false) &
+              StorageNodeEntity_.nodeType.equals(NodeType.section.name),
+        )
+        .build();
+    final count = query.count();
+    query.close();
+    return count;
+  }
+
+  int countChildContainers(String uuid) {
+    final query = box
+        .query(
+          StorageNodeEntity_.parentUuid.equals(uuid) &
+              StorageNodeEntity_.isArchived.equals(false) &
+              StorageNodeEntity_.nodeType.equals(NodeType.container.name),
+        )
+        .build();
+    final count = query.count();
+    query.close();
+    return count;
+  }
+
+  int countAttachedItems(String uuid) {
+    final query = box
+        .query(
+          StorageNodeEntity_.parentUuid.equals(uuid) &
+              StorageNodeEntity_.isArchived.equals(false) &
+              StorageNodeEntity_.nodeType.equals(NodeType.item.name),
+        )
+        .build();
+    final count = query.count();
+    query.close();
+    return count;
+  }
+
+  void deleteNode(String uuid) {
+    clearCache();
+    final node = getByUuid(uuid);
+    if (node != null) {
+      box.remove(node.id);
+    }
+  }
+
+  String buildPath(StorageNodeEntity node) {
+    return getStoragePath(node).displayString;
   }
 
   Future<List<StorageNodeEntity>> searchItems(String query) async {
@@ -401,6 +540,7 @@ class StorageNodeRepository {
   }
 
   int save(StorageNodeEntity node) {
+    clearCache();
     final photo = node.photoPath;
     if (photo != null && photo.isNotEmpty) {
       final relative = PhotoStorageService.tryMigrateToRelative(photo);
@@ -412,10 +552,12 @@ class StorageNodeRepository {
   }
 
   void delete(int id) {
+    clearCache();
     box.remove(id);
   }
 
   void deleteAll() {
+    clearCache();
     box.removeAll();
   }
 }

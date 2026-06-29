@@ -1,6 +1,8 @@
 import 'package:find_my_stuff/core/database/objectbox_service.dart';
 import 'package:find_my_stuff/objectbox.g.dart';
 import 'package:find_my_stuff/shared/entities/room_entity.dart';
+import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
+import 'package:find_my_stuff/shared/enums/node_type.dart';
 
 class RoomRepository {
   final box = ObjectBoxService.store.box<RoomEntity>();
@@ -35,5 +37,40 @@ class RoomRepository {
 
   void deleteAll() {
     box.removeAll();
+  }
+
+  int countLocations(String roomUuid) {
+    final nodeBox = ObjectBoxService.store.box<StorageNodeEntity>();
+    final query = nodeBox
+        .query(
+          StorageNodeEntity_.roomUuid.equals(roomUuid) &
+              StorageNodeEntity_.nodeType.equals(NodeType.storageLocation.name) &
+              StorageNodeEntity_.isArchived.equals(false),
+        )
+        .build();
+    final count = query.count();
+    query.close();
+    return count;
+  }
+
+  int countItems(String roomUuid) {
+    final nodeBox = ObjectBoxService.store.box<StorageNodeEntity>();
+    final query = nodeBox
+        .query(
+          StorageNodeEntity_.roomUuid.equals(roomUuid) &
+              StorageNodeEntity_.nodeType.equals(NodeType.item.name) &
+              StorageNodeEntity_.isArchived.equals(false),
+        )
+        .build();
+    final count = query.count();
+    query.close();
+    return count;
+  }
+
+  void deleteRoom(String uuid) {
+    final room = getByUuid(uuid);
+    if (room != null) {
+      box.remove(room.id);
+    }
   }
 }

@@ -406,12 +406,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                context.spacingM,
-                context.spacingS,
-                context.spacingM,
-                110,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Semantics(
@@ -427,24 +422,36 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ),
 
-                  SizedBox(height: context.spacingM),
+                  // Spacing between SearchBar and the next section (or Expiry banner) is 24dp.
+                  const SizedBox(height: 24),
 
                   // Merged expired + expiring urgency banner.
                   expiredAsync.when(
                     data: (expired) => expiringAsync.when(
-                      data: (expiring) => ExpiryAlertBanner(
-                        expiredCount: expired.length,
-                        expiringCount: expiring.length,
-                        onTapExpired: () =>
-                            context.push('/dashboard/expired'),
-                        onTapExpiring: () =>
-                            context.push('/dashboard/expiring'),
-                      ),
-                      loading: () => const SizedBox(),
-                      error: (_, _) => const SizedBox(),
+                      data: (expiring) {
+                        if (expired.isEmpty && expiring.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ExpiryAlertBanner(
+                              expiredCount: expired.length,
+                              expiringCount: expiring.length,
+                              onTapExpired: () =>
+                                  context.push('/dashboard/expired'),
+                              onTapExpiring: () =>
+                                  context.push('/dashboard/expiring'),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
                     ),
-                    loading: () => const SizedBox(),
-                    error: (_, _) => const SizedBox(),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
                   ),
 
                   roomsAsync.when(
@@ -510,7 +517,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/dashboard/all'),
                                         ),
                                       ),
-                                      SizedBox(width: context.spacingS + 4),
+                                      const SizedBox(width: 12),
                                       SizedBox(
                                         width: context.roomCardWidth,
                                         child: DashboardStatCard(
@@ -520,7 +527,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/dashboard/important'),
                                         ),
                                       ),
-                                      SizedBox(width: context.spacingS + 4),
+                                      const SizedBox(width: 12),
                                       SizedBox(
                                         width: context.roomCardWidth,
                                         child: DashboardStatCard(
@@ -530,7 +537,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/photos'),
                                         ),
                                       ),
-                                      SizedBox(width: context.spacingS + 4),
+                                      const SizedBox(width: 12),
                                       SizedBox(
                                         width: context.roomCardWidth,
                                         child: DashboardStatCard(
@@ -548,7 +555,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -575,13 +582,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ),
                             ],
                           ),
-                          SizedBox(height: context.spacingS + 4),
+                          const SizedBox(height: 8),
                           SizedBox(
                             height: context.dashboardCardHeight,
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
+                              padding: EdgeInsets.zero,
                               itemCount: rooms.length + 1,
-                              separatorBuilder: (_, _) => SizedBox(width: context.spacingS),
+                              separatorBuilder: (_, _) => const SizedBox(width: 12),
                               itemBuilder: (context, index) {
                                 if (index == rooms.length) {
                                   return SizedBox(
@@ -615,7 +623,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           // Insights — collapsed by default so it adds
                           // value without adding permanent scroll length.
@@ -630,8 +638,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                               leading: const Icon(Icons.insights_outlined),
                               child: Padding(
                                 padding: EdgeInsets.only(
-                                  left: context.spacingM,
-                                  right: context.spacingM,
                                   bottom: context.spacingM,
                                 ),
                                 child: expiredAsync.when(
@@ -646,6 +652,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                         children: [
                                           Card(
                                             elevation: 1,
+                                            margin: EdgeInsets.zero,
                                             shape: RoundedRectangleBorder(
                                               borderRadius: context.borderRadiusL,
                                               side: BorderSide(
@@ -774,7 +781,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           // Section 4: Continue Where You Left Off
                           Text(
@@ -808,10 +815,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   ),
                                 );
                               }
-                              return ListView.builder(
+                              return ListView.separated(
                                 shrinkWrap: true,
+                                padding: EdgeInsets.zero,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: list.length,
+                                separatorBuilder: (_, _) => const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
                                   final item = list[index];
                                   return SlideInFromLeft(
@@ -826,7 +835,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             },
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           // Section 5: Forgotten Items
                           Text(
@@ -867,10 +876,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 );
                               }
 
-                              return ListView.builder(
+                              return ListView.separated(
                                 shrinkWrap: true,
+                                padding: EdgeInsets.zero,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: sorted.length,
+                                separatorBuilder: (_, _) => const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
                                   final item = sorted[index];
                                   return SlideInFromLeft(
@@ -988,7 +999,7 @@ class _EmptyHomeState extends StatelessWidget {
     final theme = Theme.of(context);
     return FadeInScale(
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: context.spacingXL + 24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -998,15 +1009,15 @@ class _EmptyHomeState extends StatelessWidget {
                 size: context.iconXL + 8,
                 color: theme.colorScheme.outline,
               ),
-              SizedBox(height: context.spacingM),
+              const SizedBox(height: 16),
               Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.w700)),
-              SizedBox(height: context.spacingXS),
+              const SizedBox(height: 12),
               Text(
                 'Add your items to start organizing\nwhere your things live.',
                 textAlign: TextAlign.center,
                 style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              SizedBox(height: context.spacingM + 4),
+              const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: onAddItem,
                 icon: const Icon(Icons.add_circle_outline_rounded),

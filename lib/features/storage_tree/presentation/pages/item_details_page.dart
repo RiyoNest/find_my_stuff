@@ -24,6 +24,8 @@ import 'package:find_my_stuff/shared/providers/room_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/widgets/loading_state_widget.dart';
 import 'package:find_my_stuff/shared/widgets/error_state_widget.dart';
+import 'package:find_my_stuff/shared/widgets/delete_action.dart';
+import 'package:find_my_stuff/shared/models/storage_path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -110,56 +112,7 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
     }
   }
 
-  Future<void> _onDelete(
-    BuildContext context,
-    String name,
-    int id,
-  ) async {
-    final theme = Theme.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(context.radiusL),
-        ),
-        title: const Text('Delete Item'),
-        content: Text(
-          'Are you sure you want to permanently delete "$name"? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
 
-    if (confirmed != true) return;
-
-    try {
-      final repo = ref.read(storageNodeRepositoryProvider);
-      repo.delete(id);
-      ref.read(storageRefreshProvider.notifier).state++;
-
-      if (context.mounted) {
-        AppSnackBar.success(context, '"$name" deleted');
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        AppSnackBar.error(context, "Couldn't delete item. Please try again.");
-      }
-    }
-  }
 
   String _formatDate(DateTime dt) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -196,7 +149,7 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
           );
         }
 
-        final path = pathAsync.value ?? [];
+        final path = pathAsync.value ?? const StoragePath([]);
         final roomAsync = ref.watch(roomDetailsProvider(node.roomUuid));
         final storageCardKey = GlobalKey<StorageDetailsCardState>();
 
@@ -237,7 +190,15 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
               AppSnackBar.info(context, 'Sharing feature coming soon!');
             },
             onArchive: () => _onArchive(context, node.name, node.uuid),
-            onDelete: () => _onDelete(context, node.name, node.id),
+            onDelete: () {
+              DeleteAction.execute(
+                context: context,
+                ref: ref,
+                nodeType: 'item',
+                uuid: node.uuid,
+                displayName: node.name,
+              );
+            },
           ),
           body: SingleChildScrollView(
             padding: context.pagePadding,
@@ -251,7 +212,7 @@ class _ItemDetailsPageState extends ConsumerState<ItemDetailsPage> {
                 SizedBox(height: context.spacingM),
                 ItemQuickFactsCard(
                   item: node,
-                  pathString: path.map((e) => e.name).join(' › '),
+                  pathString: path.displayString,
                 ),
                 SizedBox(height: context.spacingM),
                 ItemQuickActions(

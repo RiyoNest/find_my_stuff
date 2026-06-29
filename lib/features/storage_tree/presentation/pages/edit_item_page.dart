@@ -19,6 +19,8 @@ import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
+import 'package:find_my_stuff/shared/widgets/permission_dialog.dart';
+import 'package:find_my_stuff/shared/providers/permission_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -77,25 +79,41 @@ class _EditItemPageState extends ConsumerState<EditItemPage> {
   }
 
   Future<void> _pickFromGallery() async {
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
+    await PermissionRequestHelper.request(
+      context: context,
+      service: ref.read(permissionServiceProvider),
+      type: AppPermissionType.gallery,
+      onGranted: () async {
+        final file = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 80,
+        );
+        if (file == null) return;
+        if (!context.mounted) return;
+        final saved = await PhotoStorageService.savePhoto(file.path);
+        _tempPhotoPaths.add(saved);
+        setState(() => _photoPath = saved);
+      },
     );
-    if (file == null) return;
-    final saved = await PhotoStorageService.savePhoto(file.path);
-    _tempPhotoPaths.add(saved);
-    setState(() => _photoPath = saved);
   }
 
   Future<void> _takePhoto() async {
-    final file = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
+    await PermissionRequestHelper.request(
+      context: context,
+      service: ref.read(permissionServiceProvider),
+      type: AppPermissionType.camera,
+      onGranted: () async {
+        final file = await _picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 80,
+        );
+        if (file == null) return;
+        if (!context.mounted) return;
+        final saved = await PhotoStorageService.savePhoto(file.path);
+        _tempPhotoPaths.add(saved);
+        setState(() => _photoPath = saved);
+      },
     );
-    if (file == null) return;
-    final saved = await PhotoStorageService.savePhoto(file.path);
-    _tempPhotoPaths.add(saved);
-    setState(() => _photoPath = saved);
   }
 
   Future<void> _selectExpiryDate() async {

@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:find_my_stuff/shared/models/storage_path.dart';
 
-import '../entities/storage_node_entity.dart';
 import 'storage_node_providers.dart';
 
 final storagePathProvider =
-    FutureProvider.family<List<StorageNodeEntity>, String>((
+    FutureProvider.family<StoragePath, String>((
       ref,
       nodeUuid,
     ) async {
@@ -13,9 +13,9 @@ final storagePathProvider =
       final node = repo.getByUuid(nodeUuid);
 
       if (node == null) {
-        return [];
+        return const StoragePath([]);
       }
 
-      return repo.getPathToRoot(node);
+      return repo.getStoragePath(node);
     });
 

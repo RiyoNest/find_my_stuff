@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:find_my_stuff/shared/widgets/permission_dialog.dart';
+import 'package:find_my_stuff/shared/providers/permission_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_colours.dart';
@@ -94,17 +96,33 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   }
 
   Future<void> _pickFromGallery() async {
-    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (file == null) return;
-    final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
-    await controller.attachPhoto(file.path);
+    await PermissionRequestHelper.request(
+      context: context,
+      service: ref.read(permissionServiceProvider),
+      type: AppPermissionType.gallery,
+      onGranted: () async {
+        final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+        if (file == null) return;
+        if (!context.mounted) return;
+        final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+        await controller.attachPhoto(file.path);
+      },
+    );
   }
 
   Future<void> _takePhoto() async {
-    final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
-    if (file == null) return;
-    final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
-    await controller.attachPhoto(file.path);
+    await PermissionRequestHelper.request(
+      context: context,
+      service: ref.read(permissionServiceProvider),
+      type: AppPermissionType.camera,
+      onGranted: () async {
+        final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+        if (file == null) return;
+        if (!context.mounted) return;
+        final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
+        await controller.attachPhoto(file.path);
+      },
+    );
   }
 
   void _onBackPress(QuickAddWizardState state, QuickAddWizardController controller) {

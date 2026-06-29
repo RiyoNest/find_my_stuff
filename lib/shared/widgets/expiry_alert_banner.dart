@@ -30,35 +30,32 @@ class ExpiryAlertBanner extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: RAppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (expiredCount > 0)
-            _AlertRow(
-              icon: Icons.error_rounded,
-              background: RAppColors.errorContainer,
-              foreground: RAppColors.onErrorContainer,
-              label: expiredCount == 1
-                  ? '1 item has expired'
-                  : '$expiredCount items have expired',
-              onTap: onTapExpired,
-            ),
-          if (expiredCount > 0 && expiringCount > 0)
-            const SizedBox(height: RAppSpacing.sm),
-          if (expiringCount > 0)
-            _AlertRow(
-              icon: Icons.schedule_rounded,
-              background: RAppColors.warningContainer,
-              foreground: RAppColors.onWarningContainer,
-              label: expiringCount == 1
-                  ? '1 item expiring soon'
-                  : '$expiringCount items expiring soon',
-              onTap: onTapExpiring,
-            ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (expiredCount > 0)
+          _AlertRow(
+            icon: Icons.error_rounded,
+            background: RAppColors.errorContainer,
+            foreground: RAppColors.onErrorContainer,
+            label: expiredCount == 1
+                ? '1 item has expired'
+                : '$expiredCount items have expired',
+            onTap: onTapExpired,
+          ),
+        if (expiredCount > 0 && expiringCount > 0)
+          const SizedBox(height: RAppSpacing.sm),
+        if (expiringCount > 0)
+          _AlertRow(
+            icon: Icons.schedule_rounded,
+            background: RAppColors.warningContainer,
+            foreground: RAppColors.onWarningContainer,
+            label: expiringCount == 1
+                ? '1 item expiring soon'
+                : '$expiringCount items expiring soon',
+            onTap: onTapExpiring,
+          ),
+      ],
     );
   }
 }

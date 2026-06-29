@@ -283,7 +283,7 @@ class _AnimatedExpandableSectionState extends State<AnimatedExpandableSection>
         InkWell(
           onTap: _toggle,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               children: [
                 if (widget.leading != null) ...[
