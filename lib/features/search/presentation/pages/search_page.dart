@@ -7,6 +7,7 @@ import 'package:find_my_stuff/shared/enums/content_view_mode.dart';
 import 'package:find_my_stuff/shared/providers/content_preferences_provider.dart';
 import 'package:find_my_stuff/shared/widgets/content_page_scaffold.dart';
 import 'package:find_my_stuff/shared/widgets/location_breadcrumb.dart';
+import 'package:find_my_stuff/shared/widgets/voice_search_sheet.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
@@ -72,6 +73,27 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     _debounce = Timer(const Duration(milliseconds: 300), () {
       ref.read(searchQueryProvider.notifier).state = val;
     });
+  }
+
+  Future<void> _showVoiceSearch() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const VoiceSearchSheet(),
+    );
+
+    if (result != null) {
+      final trimmed = result.trim();
+      if (trimmed.isNotEmpty) {
+        _searchController.text = trimmed;
+        ref.read(searchQueryProvider.notifier).state = trimmed;
+        _saveSearchQuery(trimmed);
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    }
   }
 
   void _saveSearchQuery(String searchWord) {
@@ -312,15 +334,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             },
                           ),
                         Semantics(
-                          label: 'Voice Search Placeholder',
+                          label: 'Voice Search',
                           button: true,
                           child: Tooltip(
                             message: 'Speech input search',
                             child: IconButton(
                               icon: const Icon(Icons.mic_none_rounded),
-                              onPressed: () {
-                                AppSnackBar.info(context, 'Voice search placeholder: speak now!');
-                              },
+                              onPressed: _showVoiceSearch,
                             ),
                           ),
                         ),
@@ -815,7 +835,7 @@ class _ResponsiveSearchResultCardState extends State<_ResponsiveSearchResultCard
                               loading: () => Text('...', style: context.bodySmallStyle),
                               error: (_, _) => const SizedBox(),
                               data: (path) {
-                                final text = path.map((e) => e.name).join(' › ');
+                                final text = path.displayString;
                                 return Text(
                                   text.isNotEmpty ? text : 'No location path',
                                   style: context.bodySmallStyle.copyWith(

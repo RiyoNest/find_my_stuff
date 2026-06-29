@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
-import 'package:find_my_stuff/shared/enums/node_type.dart';
+import 'package:find_my_stuff/shared/models/storage_path.dart';
 
 class StorageDetailsCard extends StatefulWidget {
   final String? roomName;
-  final List<StorageNodeEntity> path;
+  final StoragePath path;
   final VoidCallback onMove;
 
   const StorageDetailsCard({
@@ -75,19 +74,9 @@ class StorageDetailsCardState extends State<StorageDetailsCard> with SingleTicke
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    String? locationName;
-    String? sectionName;
-    String? containerName;
-    
-    for (final entity in widget.path) {
-      if (entity.nodeType == NodeType.storageLocation.name) {
-        locationName = entity.name;
-      } else if (entity.nodeType == NodeType.section.name) {
-        sectionName = entity.name;
-      } else if (entity.nodeType == NodeType.container.name) {
-        containerName = entity.name;
-      }
-    }
+    final locationName = widget.path.storageLocation?.name;
+    final sectionName = widget.path.section?.name;
+    final containerName = widget.path.container?.name;
 
     final List<Widget> rows = [];
 

@@ -3,10 +3,11 @@ import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:find_my_stuff/features/storage_tree/presentation/pages/photo_viewer_page.dart';
+import 'package:find_my_stuff/shared/models/storage_path.dart';
 
 class ItemHeroHeader extends StatelessWidget {
   final StorageNodeEntity node;
-  final List<StorageNodeEntity> path;
+  final StoragePath path;
 
   const ItemHeroHeader({
     super.key,
@@ -46,11 +47,16 @@ class ItemHeroHeader extends StatelessWidget {
     final hasThumbnail = node.photoPath != null && node.photoPath!.isNotEmpty;
     
     // Only show Room and Location for the compact storage summary
-    final compactPath = path
-        .where((e) => e.uuid != node.uuid)
-        .take(2)
-        .map((e) => e.name)
-        .join(' › ');
+    final roomName = path.room?.name;
+    final locationName = path.storageLocation?.name;
+    final String compactPath;
+    if (roomName != null && locationName != null) {
+      compactPath = '$roomName › $locationName';
+    } else if (roomName != null) {
+      compactPath = roomName;
+    } else {
+      compactPath = '';
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

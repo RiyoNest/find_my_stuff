@@ -3,6 +3,7 @@
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/providers/room_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
+import 'package:find_my_stuff/shared/widgets/delete_action.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -195,6 +196,21 @@ class _RoomDetailsContentState extends ConsumerState<_RoomDetailsContent> {
       },
       initialSearchQuery: _searchQuery,
       breadcrumbs: segments,
+      appBarActions: [
+        IconButton(
+          icon: const Icon(Icons.delete_outline_rounded),
+          tooltip: 'Delete Room',
+          onPressed: () {
+            DeleteAction.execute(
+              context: context,
+              ref: ref,
+              nodeType: 'room',
+              uuid: widget.roomUuid,
+              displayName: widget.roomName,
+            );
+          },
+        ),
+      ],
       floatingActionButton: SpeedDialFAB(
         tooltip: 'Add options',
         items: [

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'location_breadcrumb.dart';
+import 'voice_search_sheet.dart';
 
 class ContentPageScaffold extends StatefulWidget {
   final String title;
@@ -32,10 +32,6 @@ class ContentPageScaffold extends StatefulWidget {
 
 class _ContentPageScaffoldState extends State<ContentPageScaffold> {
   late final TextEditingController _searchController;
-  final SpeechToText _speech = SpeechToText();
-  bool _isListening = false;
-  bool _speechAvailable = false;
-  bool _speechInitialized = false;
 
   @override
   void initState() {
@@ -54,67 +50,27 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
 
   @override
   void dispose() {
-    _speech.stop();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _initSpeech() async {
-    if (_speechInitialized) return;
-    try {
-      _speechAvailable = await _speech.initialize(
-        onStatus: (status) {
-          if (status == 'done' || status == 'notListening') {
-            if (mounted) {
-              setState(() => _isListening = false);
-            }
-          }
-        },
-        onError: (error) {
-          if (mounted) {
-            setState(() => _isListening = false);
-          }
-        },
-      );
-      _speechInitialized = true;
-    } catch (e) {
-      debugPrint('Speech init error: $e');
-    }
-  }
+  Future<void> _showVoiceSearch() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const VoiceSearchSheet(),
+    );
 
-  Future<void> _toggleListening() async {
-    await _initSpeech();
-    if (!_speechAvailable) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Speech recognition not available')),
-        );
+    if (result != null) {
+      final trimmed = result.trim();
+      if (trimmed.isNotEmpty) {
+        _searchController.text = trimmed;
+        widget.onSearchChanged?.call(trimmed);
+        if (mounted) {
+          setState(() {});
+        }
       }
-      return;
-    }
-
-    if (_isListening) {
-      await _speech.stop();
-      setState(() => _isListening = false);
-    } else {
-      setState(() => _isListening = true);
-      await _speech.listen(
-        listenOptions: SpeechListenOptions(
-          localeId: "en_IN",
-          partialResults: true,
-          listenFor: const Duration(minutes: 1),
-          pauseFor: const Duration(seconds: 3),
-        ),
-        onResult: (result) {
-          final words = result.recognizedWords;
-          if (mounted) {
-            setState(() {
-              _searchController.text = words;
-            });
-            widget.onSearchChanged?.call(words);
-          }
-        },
-      );
     }
   }
 
@@ -196,15 +152,13 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
                             label: 'Voice Search',
                             button: true,
                             child: Tooltip(
-                              message: _isListening ? 'Stop voice recording' : 'Speech input search',
+                              message: 'Speech input search',
                               child: IconButton(
                                 icon: Icon(
-                                  _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                                  color: _isListening
-                                      ? const Color(0xFFD10047)
-                                      : theme.colorScheme.onSurfaceVariant,
+                                  Icons.mic_none_rounded,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
-                                onPressed: _toggleListening,
+                                onPressed: _showVoiceSearch,
                               ),
                             ),
                           ),
@@ -239,29 +193,6 @@ class _ContentPageScaffoldState extends State<ContentPageScaffold> {
                       ),
                     ),
                   ),
-                ),
-              ),
-
-            // Visual feedback for listening state
-            if (_isListening)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.spacingL, vertical: context.spacingXS),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.record_voice_over_rounded,
-                      color: Color(0xFFD10047),
-                      size: 18,
-                    ),
-                    SizedBox(width: context.spacingS),
-                    Text(
-                      'Listening...',
-                      style: context.bodyStyle.copyWith(
-                        color: const Color(0xFFD10047),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                 ),
               ),
 

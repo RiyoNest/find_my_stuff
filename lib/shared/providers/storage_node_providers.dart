@@ -1,10 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:find_my_stuff/shared/providers/room_providers.dart';
 import '../entities/storage_node_entity.dart';
 import '../repositories/storage_node_repository.dart';
 
 final storageNodeRepositoryProvider = Provider<StorageNodeRepository>(
-  (ref) => StorageNodeRepository(),
+  (ref) {
+    ref.watch(roomRefreshProvider);
+    ref.watch(storageRefreshProvider);
+    return StorageNodeRepository();
+  },
 );
 
 final storageRefreshProvider = StateProvider<int>((ref) => 0);

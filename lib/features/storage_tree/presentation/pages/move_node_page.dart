@@ -8,6 +8,7 @@ import 'package:find_my_stuff/shared/extensions/context_extensions.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
 import 'package:find_my_stuff/shared/providers/room_providers.dart';
 import 'package:find_my_stuff/shared/providers/storage_path_provider.dart';
+import 'package:find_my_stuff/shared/models/storage_path.dart';
 import 'package:find_my_stuff/shared/repositories/place_repository.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/widgets/quick_add_sheet.dart';
@@ -284,33 +285,26 @@ class _MoveNodePageState extends ConsumerState<MoveNodePage> {
     }
   }
 
-  List<List<dynamic>> _getRecentLocations() {
+  List<StoragePath> _getRecentLocations() {
     final repo = ref.read(storageNodeRepositoryProvider);
-    final roomRepo = ref.read(roomRepositoryProvider);
     final recentlyViewed = repo.getRecentlyViewed(limit: 15);
     
-    final paths = <String, List<dynamic>>{}; // key -> [room, ...nodes]
+    final paths = <String, StoragePath>{}; // key -> StoragePath
     
     for (final item in recentlyViewed) {
-      final path = repo.getPathToRoot(item);
-      final parentPath = path.where((e) => e.uuid != item.uuid).toList();
-      if (parentPath.isEmpty) continue;
+      if (item.parentUuid == null) {
+        continue;
+      }
+      final parentNode = repo.getByUuid(item.parentUuid!);
+      if (parentNode == null) continue;
       
-      final lastNode = parentPath.last;
-      if (!repo.canMoveNode(widget.node.uuid, lastNode.uuid)) {
+      if (!repo.canMoveNode(widget.node.uuid, parentNode.uuid)) {
         continue; // Skip invalid parent paths!
       }
       
-      final room = roomRepo.getByUuid(item.roomUuid);
-      if (room == null) continue;
-      
-      final pathParts = [room, ...parentPath];
-      final key = pathParts.map((e) {
-        if (e is RoomEntity) return e.name;
-        if (e is StorageNodeEntity) return e.name;
-        return '';
-      }).join(' › ');
-      paths[key] = pathParts;
+      final destPath = repo.getDestinationPath(parentNode);
+      final key = destPath.displayString;
+      paths[key] = destPath;
     }
     
     return paths.values.take(5).toList();
@@ -320,18 +314,9 @@ class _MoveNodePageState extends ConsumerState<MoveNodePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final repo = ref.read(storageNodeRepositoryProvider);
-    final roomRepo = ref.read(roomRepositoryProvider);
 
     // Current location path construction
-    final currentRoom = roomRepo.getByUuid(widget.node.roomUuid);
-    final currentRoomName = currentRoom?.name ?? '';
-    final currentParentPath = repo.getPathToRoot(widget.node)
-        .where((e) => e.uuid != widget.node.uuid)
-        .map((e) => e.name)
-        .join(' › ');
-    final currentPathString = currentParentPath.isNotEmpty 
-        ? '$currentRoomName › $currentParentPath' 
-        : currentRoomName;
+    final currentPathString = repo.getStoragePath(widget.node).displayString;
 
     // Load dynamic watch lists
     final roomsAsync = ref.watch(roomListProvider(_currentPlace.uuid));
@@ -548,35 +533,21 @@ class _MoveNodePageState extends ConsumerState<MoveNodePage> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: recentLocations.map((entry) {
-                          final key = entry.map((e) {
-                            if (e is RoomEntity) return e.name;
-                            if (e is StorageNodeEntity) return e.name;
-                            return '';
-                          }).join(' › ');
+                        children: recentLocations.map((path) {
+                          final key = path.displayString;
                           return ActionChip(
                             avatar: const Icon(Icons.history_rounded, size: 14),
                             label: Text(key, style: context.bodySmallStyle),
                             onPressed: () {
-                              final RoomEntity room = entry.first as RoomEntity;
+                              final room = path.room;
+                              if (room == null) return;
                               setState(() {
                                 _selectedRoomUuid = room.uuid;
-                                _selectedLocationUuid = null;
-                                _selectedSectionUuid = null;
-                                _selectedContainerUuid = null;
+                                _selectedLocationUuid = path.storageLocation?.uuid;
+                                _selectedSectionUuid = path.section?.uuid;
+                                _selectedContainerUuid = path.container?.uuid;
                                 _skipSection = false;
                                 _skipContainer = false;
-                                
-                                for (var i = 1; i < entry.length; i++) {
-                                  final node = entry[i] as StorageNodeEntity;
-                                  if (node.nodeType == NodeType.storageLocation.name) {
-                                    _selectedLocationUuid = node.uuid;
-                                  } else if (node.nodeType == NodeType.section.name) {
-                                    _selectedSectionUuid = node.uuid;
-                                  } else if (node.nodeType == NodeType.container.name) {
-                                    _selectedContainerUuid = node.uuid;
-                                  }
-                                }
                               });
                               if (mounted) {
                                 AppSnackBar.success(context, 'Location filled from history');

@@ -406,12 +406,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                context.spacingM,
-                context.spacingS,
-                context.spacingM,
-                110,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Semantics(
@@ -510,7 +505,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/dashboard/all'),
                                         ),
                                       ),
-                                      SizedBox(width: context.spacingS + 4),
+                                      const SizedBox(width: 12),
                                       SizedBox(
                                         width: context.roomCardWidth,
                                         child: DashboardStatCard(
@@ -520,7 +515,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/dashboard/important'),
                                         ),
                                       ),
-                                      SizedBox(width: context.spacingS + 4),
+                                      const SizedBox(width: 12),
                                       SizedBox(
                                         width: context.roomCardWidth,
                                         child: DashboardStatCard(
@@ -530,7 +525,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           onTap: () => context.push('/photos'),
                                         ),
                                       ),
-                                      SizedBox(width: context.spacingS + 4),
+                                      const SizedBox(width: 12),
                                       SizedBox(
                                         width: context.roomCardWidth,
                                         child: DashboardStatCard(
@@ -548,7 +543,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -575,13 +570,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ),
                             ],
                           ),
-                          SizedBox(height: context.spacingS + 4),
+                          const SizedBox(height: 8),
                           SizedBox(
                             height: context.dashboardCardHeight,
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               itemCount: rooms.length + 1,
-                              separatorBuilder: (_, _) => SizedBox(width: context.spacingS),
+                              separatorBuilder: (_, _) => const SizedBox(width: 12),
                               itemBuilder: (context, index) {
                                 if (index == rooms.length) {
                                   return SizedBox(
@@ -615,7 +610,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           // Insights — collapsed by default so it adds
                           // value without adding permanent scroll length.
@@ -774,7 +769,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           // Section 4: Continue Where You Left Off
                           Text(
@@ -826,7 +821,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             },
                           ),
 
-                          SizedBox(height: context.spacingL),
+                          const SizedBox(height: 24),
 
                           // Section 5: Forgotten Items
                           Text(
@@ -988,7 +983,7 @@ class _EmptyHomeState extends StatelessWidget {
     final theme = Theme.of(context);
     return FadeInScale(
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: context.spacingXL + 24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -998,15 +993,15 @@ class _EmptyHomeState extends StatelessWidget {
                 size: context.iconXL + 8,
                 color: theme.colorScheme.outline,
               ),
-              SizedBox(height: context.spacingM),
+              const SizedBox(height: 16),
               Text('Nothing organized yet', style: context.titleStyle.copyWith(fontWeight: FontWeight.w700)),
-              SizedBox(height: context.spacingXS),
+              const SizedBox(height: 12),
               Text(
                 'Add your items to start organizing\nwhere your things live.',
                 textAlign: TextAlign.center,
                 style: context.bodyStyle.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-              SizedBox(height: context.spacingM + 4),
+              const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: onAddItem,
                 icon: const Icon(Icons.add_circle_outline_rounded),

@@ -3,6 +3,7 @@ import 'package:find_my_stuff/features/storage_tree/presentation/pages/item_deta
 import 'package:find_my_stuff/shared/entities/storage_node_entity.dart';
 import 'package:find_my_stuff/shared/enums/node_type.dart';
 import 'package:find_my_stuff/shared/providers/storage_node_providers.dart';
+import 'package:find_my_stuff/shared/widgets/delete_action.dart';
 import 'package:find_my_stuff/shared/widgets/custom_snackbar.dart';
 import 'package:find_my_stuff/shared/widgets/safe_image_widget.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ import '../../../../shared/widgets/content_page_scaffold.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/speed_dial_fab.dart';
 import '../../../../shared/extensions/context_extensions.dart';
-import '../../../../shared/providers/room_providers.dart';
+import '../../../../shared/models/storage_path.dart';
 
 class StorageNodeDetailsPage extends ConsumerStatefulWidget {
   final String nodeUuid;
@@ -155,12 +156,9 @@ class _StorageNodeDetailsPageState
 
         final childrenAsync = ref.watch(childNodesProvider(node.uuid));
         final repo = ref.read(storageNodeRepositoryProvider);
-        final roomRepo = ref.read(roomRepositoryProvider);
 
         // Resolve room and parents chain
-        final room = roomRepo.getByUuid(node.roomUuid);
-        final roomName = room?.name ?? 'Room';
-        final pathNodes = repo.getPathToRoot(node);
+        final pathNodes = repo.getStoragePath(node);
 
         final segments = [
           BreadcrumbSegment(
@@ -168,25 +166,31 @@ class _StorageNodeDetailsPageState
             isHome: true,
             onTap: () => context.go('/'),
           ),
-          BreadcrumbSegment(
-            label: roomName,
-            onTap: () => context.push('/room/${node.roomUuid}'),
-            icon: Icons.meeting_room_rounded,
-          ),
-          ...pathNodes.map((pNode) {
-            final isCurrent = pNode.uuid == node.uuid;
+          ...pathNodes.segments.map((segment) {
+            final isCurrent = segment.uuid == node.uuid;
             IconData icon = Icons.view_agenda_rounded;
-            if (pNode.nodeType == NodeType.container.name) {
-              icon = Icons.inventory_2_outlined;
-            } else if (pNode.nodeType == NodeType.item.name) {
-              icon = Icons.label_outline;
+            switch (segment.type) {
+              case StoragePathSegmentType.room:
+                icon = Icons.meeting_room_rounded;
+                break;
+              case StoragePathSegmentType.storageLocation:
+                icon = Icons.door_sliding_outlined;
+                break;
+              case StoragePathSegmentType.section:
+                icon = Icons.layers_outlined;
+                break;
+              case StoragePathSegmentType.container:
+                icon = Icons.inventory_2_outlined;
+                break;
             }
             return BreadcrumbSegment(
-              label: pNode.name,
+              label: segment.name,
               icon: icon,
               onTap: isCurrent
                   ? null
-                  : () => context.push('/node/${pNode.uuid}'),
+                  : () => segment.type == StoragePathSegmentType.room
+                      ? context.push('/room/${segment.uuid}')
+                      : context.push('/node/${segment.uuid}'),
             );
           }),
         ];
@@ -201,6 +205,21 @@ class _StorageNodeDetailsPageState
           },
           initialSearchQuery: _searchQuery,
           breadcrumbs: segments,
+          appBarActions: [
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              tooltip: 'Delete',
+              onPressed: () {
+                DeleteAction.execute(
+                  context: context,
+                  ref: ref,
+                  nodeType: node.nodeType,
+                  uuid: node.uuid,
+                  displayName: node.name,
+                );
+              },
+            ),
+          ],
           floatingActionButton: SpeedDialFAB(
             tooltip: 'Add options',
             items: [

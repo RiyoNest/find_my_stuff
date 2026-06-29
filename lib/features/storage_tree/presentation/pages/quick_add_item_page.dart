@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:find_my_stuff/shared/widgets/permission_dialog.dart';
+import 'package:find_my_stuff/shared/providers/permission_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_colours.dart';
@@ -94,6 +96,13 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   }
 
   Future<void> _pickFromGallery() async {
+    final granted = await PermissionRequestHelper.request(
+      context: context,
+      service: ref.read(permissionServiceProvider),
+      type: AppPermissionType.gallery,
+    );
+    if (!granted) return;
+
     final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (file == null) return;
     final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
@@ -101,6 +110,13 @@ class _QuickAddItemPageState extends ConsumerState<QuickAddItemPage> {
   }
 
   Future<void> _takePhoto() async {
+    final granted = await PermissionRequestHelper.request(
+      context: context,
+      service: ref.read(permissionServiceProvider),
+      type: AppPermissionType.camera,
+    );
+    if (!granted) return;
+
     final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
     if (file == null) return;
     final controller = ref.read(quickAddWizardProvider(widget.initialDraft).notifier);
